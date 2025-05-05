@@ -13,3 +13,5 @@ podman-compose up
 
 stop containers with
 podman-compose down
+
+or use make
