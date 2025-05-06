@@ -22,3 +22,6 @@
       pay which is calculated by using the work log table to get the total hours worked by the
       employee between the given range
     - will definitely make use of JOIN operations
+
+## Data Flow
+Work Logs -> Payroll Calculator -> Payroll Table
