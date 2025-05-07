@@ -1,17 +1,8 @@
-import logging
 import time
 import mysql.connector
+from ..utils.logger import get_logger
 
-# set up logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-# log to shell
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-
+logger = get_logger(__name__)
 
 class Database:
     def __init__(self, host=None, user=None, password=None, database=None, port=None, attempts=None, delay=None):

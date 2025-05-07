@@ -35,3 +35,4 @@ logs:
 clean:
 	$(COMPOSE) down --volumes --remove-orphans
 	rm -rf mysql_data
+	rm -rf logs
