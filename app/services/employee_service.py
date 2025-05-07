@@ -121,7 +121,7 @@ class EmployeeService:
         set_clauses = []
         values = []
 
-        for field, value in update_fields:
+        for field, value in update_fields.items:
             set_clauses.append(f"{field} = %s")
             values.append(value)
 

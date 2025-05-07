@@ -31,10 +31,9 @@ class RoleService:
             return None
         finally:
             cursor.close()
-                 
-    return None
+
     @staticmethod
-    def get_by_id(emp_id: int) -> Employee:
+    def get_by_id(role_id: int) -> Role:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -42,23 +41,23 @@ class RoleService:
         cursor = cnx.cursor(dictionary=True)
         
         query = """
-            SELECT * from employees
+            SELECT * from roles
             WHERE id = %s
         """
 
         try:
-            cursor.execute(query, (emp_id,))
+            cursor.execute(query, (role_id,))
             row = cursor.fetchone()
-            logger.info("Fetched employee id (%s), returning results.", emp_id)
-            return Employee(**row) if row else None
+            logger.info("Fetched role id (%s), returning results.", role_id)
+            return Role(**row) if row else None
         except MySQLError as err:
-            logger.error("Failed to fetch employee id (%s): %s", emp_id, err)
+            logger.error("Failed to fetch role id (%s): %s", role_id, err)
             return None
         finally:
             cursor.close()
 
     @staticmethod
-    def get_by_email(emp_email: str) -> Employee:
+    def get_by_name(role_name: str) -> Role:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -66,23 +65,23 @@ class RoleService:
         cursor = cnx.cursor(dictionary=True)
         
         query = """
-            SELECT * from employees
-            WHERE email = %s
+            SELECT * from roles
+            WHERE name = %s
         """
 
         try:
-            cursor.execute(query, (emp_email,))
+            cursor.execute(query, (role_name,))
             row = cursor.fetchone()
-            logger.info("Fetched employee email (%s), returning results.", emp_email)
-            return Employee(**row) if row else None
+            logger.info("Fetched role name (%s), returning results.", role_name)
+            return Role(**row) if row else None
         except MySQLError as err:
-            logger.error("Failed to fetch employee email (%s): %s", emp_email, err)
+            logger.error("Failed to fetch role name (%s): %s", role_name, err)
             return None
         finally:
             cursor.close()
 
     @staticmethod
-    def get_by_role_id(role_id: int) -> list[Employee]:
+    def get_by_hourly_wage(hourly_wage: float) -> list[Role]:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -90,23 +89,23 @@ class RoleService:
         cursor = cnx.cursor(dictionary=True)
         
         query = """
-            SELECT * from employees
-            WHERE role_id = %s
+            SELECT * from roles
+            WHERE hourly_wage = %s
         """
 
         try:
-            cursor.execute(query)
+            cursor.execute(query, (hourly_wage,))
             rows = cursor.fetchall()
-            logger.info("Fetched all employees with role (%s), returning results.", role_id)
-            return [Employee(**row) for row in rows] if rows else []
+            logger.info("Fetched all roles with hourly wage of (%s), returning results.", hourly_wage)
+            return [Role(**row) for row in rows] if rows else []
         except MySQLError as err:
-            logger.error("Failed to fetch employees with role (%s): %s", role_id, err)
+            logger.error("Failed to fetch roles with hourly wage of (%s): %s", hourly_wage, err)
             return []
         finally:
             cursor.close()
 
     @staticmethod
-    def update(emp_id: int, update_fields: dict) -> bool:
+    def update(role_id: int, update_fields: dict) -> bool:
         # nothing to update
         if not update_fields:
             logger.warning("Empty update fields were passed.")
@@ -122,15 +121,15 @@ class RoleService:
         set_clauses = []
         values = []
 
-        for field, value in update_fields:
+        for field, value in update_fields.items:
             set_clauses.append(f"{field} = %s")
             values.append(value)
 
         # where clause
-        values.append(emp_id)
+        values.append(role_id)
 
         query = f"""
-            UPDATE employees
+            UPDATE roles
             SET {', '.join(set_clauses)}
             WHERE id = %s
         """
@@ -138,17 +137,17 @@ class RoleService:
         try:
             cursor.execute(query, values)
             cnx.commit()
-            logger.info("Executed update on employee id (%s), returning results", emp_id)
+            logger.info("Executed update on role id (%s), returning results", role_id)
             return cursor.rowcount > 0
         except MySQLError as err:
             cnx.rollback()
-            logger.error("Failed to update employee id (%s): %s", emp_id, err)
+            logger.error("Failed to update role id (%s): %s", role_id, err)
             return False
         finally:
             cursor.close()
         
     @staticmethod
-    def delete(emp_id: int) -> bool:
+    def delete(role_id: int) -> bool:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -156,23 +155,23 @@ class RoleService:
         cursor = cnx.cursor()
 
         query = """
-            DELETE FROM employees
+            DELETE FROM roles
             WHERE id = %s
         """
 
         try:
-            cursor.execute(query, (emp_id,))
+            cursor.execute(query, (role_id,))
             cnx.commit()
-            logger.info("Executed deletion on employee id (%s), returning results", emp_id)
+            logger.info("Executed deletion on role id (%s), returning results", role_id)
             return cursor.rowcount > 0
         except MySQLError as err:
-            logger.error("Failed to delete employee id (%s): %s", emp_id, err)
+            logger.error("Failed to delete role id (%s): %s", role_id, err)
             return False
         finally:
             cursor.close()
     
     @staticmethod
-    def get_all() -> list[Employee]:
+    def get_all() -> list[Role]:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -180,16 +179,16 @@ class RoleService:
         cursor = cnx.cursor(dictionary=True)
 
         query = """
-            SELECT * FROM employees
+            SELECT * FROM roles
         """
 
         try:
             cursor.execute(query)
             rows = cursor.fetchall()
-            logger.info("Fetched all employees, returning results.")
-            return [Employee(**row) for row in rows] if rows else []
+            logger.info("Fetched all roles, returning results.")
+            return [Role(**row) for row in rows] if rows else []
         except MySQLError as err:
-            logger.error("Failed to fetch all employees: %s", err)
+            logger.error("Failed to fetch all roles: %s", err)
             return []
         finally:
             cursor.close()
