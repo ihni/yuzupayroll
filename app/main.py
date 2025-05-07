@@ -1,8 +1,4 @@
-from db import Database
-from config import DATABASE_CONFIG
-
-# singleton pattern
-db = Database(**DATABASE_CONFIG)
+from db import db
 
 def create_app():
     return None
