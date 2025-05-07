@@ -1,14 +1,14 @@
 from .. import db
 from mysql.connector import Error as MySQLError
-from ..models import WorkLog
+from ..models import Payroll
 from ..utils import get_logger
 import datetime
 
 logger = get_logger(__name__)
 
-class WorkLogService:
+class PayrollService:
     @staticmethod
-    def create(work_log: WorkLog):
+    def create(payroll: Payroll):
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -16,25 +16,25 @@ class WorkLogService:
         cursor = cnx.cursor()
 
         query = """
-            INSERT INTO work_logs (date_worked, hours_worked, employee_id)
+            INSERT INTO payroll (pay_period_start, pay_period_end, gross_pay, total_hours, employee_id)
             VALUES
-            (%(date_worked)s, %(hours_worked)s, %(employee_id)s)
+            (%(pay_period_start)s, %(pay_period_end)s, %(gross_pay)s, %(total_hours)s, %(employee_id)s)
         """
 
         try:
-            cursor.execute(query, work_log.to_dict())
+            cursor.execute(query, payroll.to_dict())
             cnx.commit()
-            logger.info("Work log created with ID: %s", cursor.lastrowid)
+            logger.info("Payroll created with ID: %s", cursor.lastrowid)
             return cursor.lastrowid
         except MySQLError as err:
             cnx.rollback()
-            logger.error("Failed to create work log: %s", err)
+            logger.error("Failed to create payroll: %s", err)
             return None
         finally:
             cursor.close()
 
     @staticmethod
-    def get_by_id(work_log_id: int) -> WorkLog:
+    def get_by_id(payroll_id: int) -> Payroll:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -42,23 +42,23 @@ class WorkLogService:
         cursor = cnx.cursor(dictionary=True)
         
         query = """
-            SELECT * from work_logs
+            SELECT * from payroll
             WHERE id = %s
         """
 
         try:
-            cursor.execute(query, (work_log_id,))
+            cursor.execute(query, (payroll_id,))
             row = cursor.fetchone()
-            logger.info("Fetched work log id (%s), returning results.", work_log_id)
-            return WorkLog(**row) if row else None
+            logger.info("Fetched payroll id (%s), returning results.", payroll_id)
+            return Payroll(**row) if row else None
         except MySQLError as err:
-            logger.error("Failed to fetch work log id (%s): %s", work_log_id, err)
+            logger.error("Failed to fetch payroll id (%s): %s", payroll_id, err)
             return None
         finally:
             cursor.close()
 
     @staticmethod
-    def get_by_date(date: datetime) -> list[WorkLog]:
+    def get_by_date_range(start: datetime, end: datetime) -> list[Payroll]:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -66,23 +66,23 @@ class WorkLogService:
         cursor = cnx.cursor(dictionary=True)
         
         query = """
-            SELECT * from work_logs
-            WHERE date_worked = %s
+            SELECT * from payroll
+            WHERE date BETWEEN %(pay_period_start)s AND %(pay_period_end)s
         """
 
         try:
-            cursor.execute(query, (date,))
+            cursor.execute(query, (start, end,))
             rows = cursor.fetchall()
-            logger.info("Fetched all work logs with date (%s), returning results.", date)
-            return [WorkLog(**row) for row in rows] if rows else []
+            logger.info("Fetched all payrolls with date range between (%s - %s), returning results.", start, end)
+            return [Payroll(**row) for row in rows] if rows else []
         except MySQLError as err:
-            logger.error("Failed to fetch work logs with date (%s): %s", date, err)
+            logger.error("Failed to fetch payrolls with date range between (%s - %s): %s", start, end, err)
             return []
         finally:
             cursor.close()
 
     @staticmethod
-    def get_by_employee_id(emp_id: int) -> list[WorkLog]:
+    def get_by_employee_id(emp_id: int) -> list[Payroll]:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -90,23 +90,23 @@ class WorkLogService:
         cursor = cnx.cursor(dictionary=True)
         
         query = """
-            SELECT * from work_logs
+            SELECT * from payroll
             WHERE employee_id = %s
         """
 
         try:
             cursor.execute(query, (emp_id,))
             rows = cursor.fetchall()
-            logger.info("Fetched all work logs with employee id (%s), returning results.", emp_id)
-            return [WorkLog(**row) for row in rows] if rows else []
+            logger.info("Fetched all payrolls with employee id (%s), returning results.", emp_id)
+            return [Payroll(**row) for row in rows] if rows else []
         except MySQLError as err:
-            logger.error("Failed to fetch work logs with employee id (%s): %s", emp_id, err)
+            logger.error("Failed to fetch payrolls with employee id (%s): %s", emp_id, err)
             return []
         finally:
             cursor.close()
 
     @staticmethod
-    def get_by_hour_worked(hours_worked: int) -> list[WorkLog]:
+    def get_by_total_hours(total_hours: int) -> list[Payroll]:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -114,23 +114,47 @@ class WorkLogService:
         cursor = cnx.cursor(dictionary=True)
         
         query = """
-            SELECT * from work_logs
-            WHERE hours_worked = %s
+            SELECT * from payroll
+            WHERE total_hours = %s
         """
 
         try:
-            cursor.execute(query, (hours_worked,))
+            cursor.execute(query, (total_hours,))
             rows = cursor.fetchall()
-            logger.info("Fetched all work logs with hour/s amount (%s), returning results.", hours_worked)
-            return [WorkLog(**row) for row in rows] if rows else []
+            logger.info("Fetched all payrolls with total hours (%s), returning results.", total_hours)
+            return [Payroll(**row) for row in rows] if rows else []
         except MySQLError as err:
-            logger.error("Failed to fetch work logs with hour/s amount (%s): %s", hours_worked, err)
+            logger.error("Failed to fetch payrolls with total hours (%s): %s", total_hours, err)
             return []
         finally:
             cursor.close()
 
     @staticmethod
-    def update(work_log_id: int, update_fields: dict) -> bool:
+    def get_by_gross_pay(gross_pay: int) -> list[Payroll]:
+        cnx = db.get_connection()
+        if not cnx:
+            logger.error("No database connection available.")
+            return []
+        cursor = cnx.cursor(dictionary=True)
+        
+        query = """
+            SELECT * from payroll
+            WHERE gross_pay = %s
+        """
+
+        try:
+            cursor.execute(query, (gross_pay,))
+            rows = cursor.fetchall()
+            logger.info("Fetched all payrolls with gross pay (%s), returning results.", gross_pay)
+            return [Payroll(**row) for row in rows] if rows else []
+        except MySQLError as err:
+            logger.error("Failed to fetch payrolls with gross pay (%s): %s", gross_pay, err)
+            return []
+        finally:
+            cursor.close()
+
+    @staticmethod
+    def update(payroll_id: int, update_fields: dict) -> bool:
         # nothing to update
         if not update_fields:
             logger.warning("Empty update fields were passed.")
@@ -151,10 +175,10 @@ class WorkLogService:
             values.append(value)
 
         # where clause
-        values.append(work_log_id)
+        values.append(payroll_id)
 
         query = f"""
-            UPDATE work_logs
+            UPDATE payroll
             SET {', '.join(set_clauses)}
             WHERE id = %s
         """
@@ -162,17 +186,17 @@ class WorkLogService:
         try:
             cursor.execute(query, values)
             cnx.commit()
-            logger.info("Executed update on work log id (%s), returning results", work_log_id)
+            logger.info("Executed update on payroll id (%s), returning results", payroll_id)
             return cursor.rowcount > 0
         except MySQLError as err:
             cnx.rollback()
-            logger.error("Failed to update work log id (%s): %s", work_log_id, err)
+            logger.error("Failed to update payroll id (%s): %s", payroll_id, err)
             return False
         finally:
             cursor.close()
         
     @staticmethod
-    def delete(work_log_id: int) -> bool:
+    def delete(payroll_id: int) -> bool:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -180,23 +204,23 @@ class WorkLogService:
         cursor = cnx.cursor()
 
         query = """
-            DELETE FROM work_logs
+            DELETE FROM payroll
             WHERE id = %s
         """
 
         try:
-            cursor.execute(query, (work_log_id,))
+            cursor.execute(query, (payroll_id,))
             cnx.commit()
-            logger.info("Executed deletion on work log id (%s), returning results", work_log_id)
+            logger.info("Executed deletion on payroll id (%s), returning results", payroll_id)
             return cursor.rowcount > 0
         except MySQLError as err:
-            logger.error("Failed to delete work log id (%s): %s", work_log_id, err)
+            logger.error("Failed to delete payroll id (%s): %s", payroll_id, err)
             return False
         finally:
             cursor.close()
     
     @staticmethod
-    def get_all() -> list[WorkLog]:
+    def get_all() -> list[Payroll]:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -204,16 +228,16 @@ class WorkLogService:
         cursor = cnx.cursor(dictionary=True)
 
         query = """
-            SELECT * FROM work_logs
+            SELECT * FROM payroll
         """
 
         try:
             cursor.execute(query)
             rows = cursor.fetchall()
-            logger.info("Fetched all work logs, returning results.")
-            return [WorkLog(**row) for row in rows] if rows else []
+            logger.info("Fetched all payrolls, returning results.")
+            return [Payroll(**row) for row in rows] if rows else []
         except MySQLError as err:
-            logger.error("Failed to fetch all work logs: %s", err)
+            logger.error("Failed to fetch all payrolls: %s", err)
             return []
         finally:
             cursor.close()

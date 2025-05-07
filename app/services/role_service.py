@@ -121,7 +121,7 @@ class RoleService:
         set_clauses = []
         values = []
 
-        for field, value in update_fields.items:
+        for field, value in update_fields.items():
             set_clauses.append(f"{field} = %s")
             values.append(value)
 

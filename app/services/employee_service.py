@@ -94,7 +94,7 @@ class EmployeeService:
         """
 
         try:
-            cursor.execute(query)
+            cursor.execute(query, (role_id,))
             rows = cursor.fetchall()
             logger.info("Fetched all employees with role (%s), returning results.", role_id)
             return [Employee(**row) for row in rows] if rows else []
@@ -121,7 +121,7 @@ class EmployeeService:
         set_clauses = []
         values = []
 
-        for field, value in update_fields.items:
+        for field, value in update_fields.items():
             set_clauses.append(f"{field} = %s")
             values.append(value)
 
