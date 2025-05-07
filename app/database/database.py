@@ -1,6 +1,6 @@
 import time
 import mysql.connector
-from ..utils.logger import get_logger
+from ..utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -53,9 +53,9 @@ class Database:
         else:
             self.connection = self.__connect()
             if self.connection and self.connection.is_connected():
-                print("Connection successful! Returning the connection...")
+                logger.info("Connection was successful!")
                 return self.connection
-            print("Could not connect to MySQL.")
+            logger.error("Could not connect to MySQL.")
             return None
         
     def close_connection(self):

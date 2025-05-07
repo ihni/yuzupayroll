@@ -19,3 +19,12 @@ logger = get_logger(__name__)
 logger.info("This is an info message")
 logger.error("This is an error")
 ```
+
+## Logger levels
+```python
+logger.debug()
+logger.info()
+logger.warning()
+logger.error()
+logger.critical()
+```
