@@ -7,7 +7,7 @@
 ## Use
 - The only exposed functions are **get_connection()** and **close_connection()**
 - The former will connect if no connections were made(or reconnect if it had previously failed) and return the connector, else,
-  previous connection still existed, that would then be returned
+  the previous connection still that existed would then be returned
 - **close_connection()** automatically cleans up the connection and closes it
 - import the db package and get the connection like such:
 ```python
