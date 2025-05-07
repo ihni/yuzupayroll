@@ -1,4 +1,4 @@
-from db import db
+from app import db
 
 def create_app():
     return None
