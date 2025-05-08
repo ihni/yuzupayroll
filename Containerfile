@@ -18,6 +18,6 @@ COPY app/ ./app/
 
 RUN chmod +x main.py
 
-EXPOSE 8000
+EXPOSE 5000
 
 CMD ["python", "main.py"]

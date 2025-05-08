@@ -5,7 +5,7 @@ services:
       dockerfile: Containerfile
     hostname: payroll-app
     ports:
-      - "8000:8000"
+      - "5000:5000"
     volumes:
       - .:/project:ro
       - ./storage:/storage
