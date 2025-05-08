@@ -38,6 +38,14 @@ fetches employees by their role id
     - a list of `Employee` objects (could be empty)
 ---
 
+### `get_by_role_name(role_name: str)`
+fetches employees by their role name
+- **Parameters**:
+    - `role_name (str):` the role name of the employees to fetch
+- **Return value**:
+    - a list of `Employee` objects (could be empty)
+---
+
 ### `get_all()`
 fetches all employees
 - **Return value**:

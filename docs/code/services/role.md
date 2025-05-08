@@ -30,12 +30,20 @@ Fetches a single role by its name
     - a `Role` object or `None` if no result or error  
 ---
 
-### `get_by_hourly_wage(hourly_wage: float)`  
+### `get_by_hourly_rate(hourly_wage: float)`  
 Fetches roles with a specific hourly wage  
 - **Parameters**:  
-    - `hourly_wage (float):` the wage value to filter roles by  
+    - `hourly_rate (float):` the rate value to filter roles by  
 - **Return value**:  
     - a list of `Role` objects (could be empty)  
+---
+
+### `get_count_emp_by_role_id(role_id: int)`  
+Fetches count of employees with a specific role  
+- **Parameters**:  
+    - `role_id (int):` the role id to filter count of employees by  
+- **Return value**:  
+    - the number of employees in that role
 ---
 
 ### `get_all()`  

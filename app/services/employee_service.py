@@ -105,6 +105,33 @@ class EmployeeService:
             cursor.close()
 
     @staticmethod
+    def get_by_role_name(role_name: str) -> list[Employee]:
+        cnx = db.get_connection()
+        if not cnx:
+            logger.error("No database connection available.")
+            return []
+        cursor = cnx.cursor(dictionary=True)
+        like_pattern = f"%{role_name}%"
+        query = """
+            SELECT * FROM employees
+            INNER JOIN roles ON employees.role_id IN (
+                SELECT id FROM roles
+                WHERE name LIKE %s
+            )
+        """
+
+        try:
+            cursor.execute(query, (like_pattern,))
+            rows = cursor.fetchall()
+            logger.info("Fetched all employees with role name like (%s), returning results.", role_name)
+            return [Employee(**row) for row in rows] if rows else []
+        except MySQLError as err:
+            logger.error("Failed to fetch employees with role name like (%s): %s", role_name, err)
+            return []
+        finally:
+            cursor.close()
+
+    @staticmethod
     def update(emp_id: int, update_fields: dict) -> bool:
         # nothing to update
         if not update_fields:

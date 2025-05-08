@@ -81,7 +81,7 @@ class RoleService:
             cursor.close()
 
     @staticmethod
-    def get_by_hourly_wage(hourly_wage: float) -> list[Role]:
+    def get_by_hourly_rate(hourly_rate: float) -> list[Role]:
         cnx = db.get_connection()
         if not cnx:
             logger.error("No database connection available.")
@@ -90,17 +90,42 @@ class RoleService:
         
         query = """
             SELECT * from roles
-            WHERE hourly_wage = %s
+            WHERE hourly_rate = %s
         """
 
         try:
-            cursor.execute(query, (hourly_wage,))
+            cursor.execute(query, (hourly_rate,))
             rows = cursor.fetchall()
-            logger.info("Fetched all roles with hourly wage of (%s), returning results.", hourly_wage)
+            logger.info("Fetched all roles with hourly wage of (%s), returning results.", hourly_rate)
             return [Role(**row) for row in rows] if rows else []
         except MySQLError as err:
-            logger.error("Failed to fetch roles with hourly wage of (%s): %s", hourly_wage, err)
+            logger.error("Failed to fetch roles with hourly wage of (%s): %s", hourly_rate, err)
             return []
+        finally:
+            cursor.close()
+
+    @staticmethod
+    def get_count_emp_by_role_id(role_id: int) -> int:
+        cnx = db.get_connection()
+        if not cnx:
+            logger.error("No database connection available.")
+            return -1
+        cursor = cnx.cursor()
+
+        query = """
+            SELECT COUNT(*) FROM roles
+            INNER JOIN employees ON roles.id = employees.role_id
+            WHERE id = %s
+        """
+
+        try:
+            cursor.execute(query, (role_id,))
+            (count,) = cursor.fetchone()
+            logger.info("Fetched count of employees by role id (%s), returning results.", role_id)
+            return count
+        except MySQLError as err:
+            logger.error("Failed to fetch count of employees role id (%s): %s", role_id, err)
+            return -1
         finally:
             cursor.close()
 
