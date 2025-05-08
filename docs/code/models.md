@@ -1,8 +1,9 @@
 # Models
 
 ## Purpose
-They act as data containers which represent the core tables, each class contains a **to_dict()** to
-easily index the data from them
+They act as data containers which represent the core tables.
+
+Each model includes a **to_dict()** method to serialize its attributes into a format suitable for raw SQL execution, especially for INSERT and UPDATE operations without an ORM.
 
 ## Main models
 - Employee
@@ -51,7 +52,7 @@ calculation of the payrolls nor has an effect on the employees nor roles
 |---------------|-------------------|
 | id            | pk, int           |
 | name          | uq, varchar(45)   |
-| hourly_wage   | decimal(10, 2)    |
+| hourly_rate   | decimal(10, 2)    |
 
 ### WorkLog
 | fields        | data_type     |

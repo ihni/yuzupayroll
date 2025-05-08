@@ -15,18 +15,20 @@ class RoleService:
         cursor = cnx.cursor()
 
         query = """
-            INSERT INTO roles (name, hourly_wage)
+            INSERT INTO roles (name, hourly_rate)
             VALUES
-            (%(name)s, %(hourly_wage)s)
+            (%(name)s, %(hourly_rate)s)
         """
 
         try:
-            cursor.execute(query, role.to_dict())
+            cursor.execute(query, role.to_dict_for_insert())
             cnx.commit()
             logger.info("Role (%s) created with ID: %s", role.name, cursor.lastrowid)
             return cursor.lastrowid
         except MySQLError as err:
             cnx.rollback()
+            if err.errno == 1062:
+                logger.warning("Duplicate role name attempted (%s): %s", role.name, err)
             logger.error("Failed to create Role: %s", err)
             return None
         finally:
@@ -113,9 +115,9 @@ class RoleService:
         cursor = cnx.cursor()
 
         query = """
-            SELECT COUNT(*) FROM roles
-            INNER JOIN employees ON roles.id = employees.role_id
-            WHERE id = %s
+            SELECT COUNT(*) FROM employees
+            INNER JOIN roles ON employees.role_id = roles.id
+            WHERE roles.id = %s
         """
 
         try:

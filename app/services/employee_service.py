@@ -21,7 +21,7 @@ class EmployeeService:
         """
 
         try:
-            cursor.execute(query, employee.to_dict())
+            cursor.execute(query, employee.to_dict_for_insert())
             cnx.commit()
             logger.info("Employee created with ID: %s", cursor.lastrowid)
             return cursor.lastrowid

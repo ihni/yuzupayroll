@@ -65,7 +65,7 @@ calculation of the payrolls nor has an effect on the employees nor roles
 |---------------|-------------------|
 | id            | pk, int           |
 | name          | uq, varchar(45)   |
-| hourly_wage   | decimal(10, 2)    |
+| hourly_rate   | decimal(10, 2)    |
 
 ### WorkLog
 | fields        | data_type     |

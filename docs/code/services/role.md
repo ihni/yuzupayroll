@@ -2,7 +2,7 @@
 
 ## Purpose
 Provides static functions to access roles and interact with the `roles` table in the  
-database. Includes basic CRUD operations and utility queries by name and wage.
+database. Includes basic CRUD operations and utility queries by name and rate.
 
 ## Public functions
 
@@ -30,8 +30,8 @@ Fetches a single role by its name
     - a `Role` object or `None` if no result or error  
 ---
 
-### `get_by_hourly_rate(hourly_wage: float)`  
-Fetches roles with a specific hourly wage  
+### `get_by_hourly_rate(hourly_rate: float)`  
+Fetches roles with a specific hourly rate  
 - **Parameters**:  
     - `hourly_rate (float):` the rate value to filter roles by  
 - **Return value**:  

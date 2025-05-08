@@ -22,7 +22,7 @@ class WorkLogService:
         """
 
         try:
-            cursor.execute(query, work_log.to_dict())
+            cursor.execute(query, work_log.to_dict_for_insert())
             cnx.commit()
             logger.info("Work log created with ID: %s", cursor.lastrowid)
             return cursor.lastrowid

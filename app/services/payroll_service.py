@@ -22,7 +22,7 @@ class PayrollService:
         """
 
         try:
-            cursor.execute(query, payroll.to_dict())
+            cursor.execute(query, payroll.to_dict_for_insert())
             cnx.commit()
             logger.info("Payroll created with ID: %s", cursor.lastrowid)
             return cursor.lastrowid
