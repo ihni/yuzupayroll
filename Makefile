@@ -1,38 +1,59 @@
-COMPOSE=podman-compose
+# =========================
+# Project Configuration
+# =========================
+export PODMAN_IGNORE_CGROUPSV1_WARNING=1
+COMPOSE := podman-compose
+PROJECT_NAME := payrollsys
+MYSQL_USER := user
+MYSQL_PASS := pass
+MYSQL_DATABASE := payroll_db
 
-.PHONY: help
+# =========================
+# Development commands
+# =========================
+.PHONY:
 help:
-	@echo "Commands"
-	@echo "	make up			Start the container"
-	@echo "	make down		Stop the container"
-	@echo "	make rebuild		Rebuild and start fresh"
-	@echo "	make logs		View logs"
-	@echo "	make clean		Remove all data"
+	@echo "Payroll Management System"
+	@echo "make init		- Initialize directories and permissions"
+	@echo "make up			- Start the container"
+	@echo "make up-detached	- Start the container detached"
+	@echo "make down		- Stop the container"
+	@echo "make restart		- Restart the containers"
+	@echo "make logs		- View container logs"
+	@echo "make clean		- Full cleanup"
+	@echo "make db-shell		- Access MySQL shell"
 
-# Start the container
-.PHONY: up
-up:
+# =========================
+# Development commands
+# =========================
+.PHONY: init up up-detach down restart logs clean db-shell
+
+init:
+	mkdir -p storage/{db,logs}
+	@echo "Storage initialized"
+
+up: init
+	@echo "Starting $(PROJECT_NAME)..."
 	$(COMPOSE) up --build
 
-# Stop the container
-.PHONY: down
+up-detach:
+	@echo "Starting $(PROJECT_NAME) detached..."
+	$(COMPOSE) up --build --detach
+
 down:
-	$(COMPOSE) down
+	@echo "Stopping container..."
+	$(COMPOSE) down --timeout 2
 
-# Rebuild and start fresh
-.PHONY: rebuild
-rebuild:
-	$(COMPOSE) down --volumes
-	$(COMPOSE) up --build
+restart: down up
 
-# View logs
-.PHONY: logs
 logs:
-	$(COMPOSE) logs -f
+	$(COMPOSE) logs --tail=100 -f
 
-# Remove all data
-.PHONY: clean
 clean:
 	$(COMPOSE) down --volumes --remove-orphans
-	rm -rf mysql_data
-	rm -rf logs
+	rm -rf storage
+	podman system prune -f
+	@echo "All containers and data removed"
+
+db-shell:
+	$(COMPOSE) exec db mysql -u$(MYSQL_USER) -p$(MYSQL_PASSWORD) $(MYSQL_DATABASE)

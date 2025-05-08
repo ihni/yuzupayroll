@@ -1,5 +1,7 @@
 from .config import (
     DATABASE_CONFIG,
+    CONNECTION_ATTEMPTS,
+    RECONNECTION_DELAY,
     LOG_FORMATTER,
     LOG_PATH,
     LOG_ROTATION,

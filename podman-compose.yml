@@ -3,25 +3,36 @@ services:
     build:
       context: .
       dockerfile: Containerfile
+    hostname: payroll-app
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
-    depends_on:
-      - db
+      - .:/project:ro
+      - ./storage:/storage
     environment:
       MYSQL_HOST: db
       MYSQL_PORT: 3306
+    depends_on:
+      - db
+    networks:
+      - payroll-net
 
   db:
     image: mysql:8
+    hostname: payroll-db
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: payroll_db
       MYSQL_USER: user
-      MYSQL_PASSWORD: user
+      MYSQL_PASSWORD: pass
     ports:
       - "3306:3306"
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - ./storage/db:/var/lib/mysql
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - payroll-net
+  
+networks:
+  payroll-net:
+    driver: bridge

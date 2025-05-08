@@ -15,3 +15,13 @@ to configure podman to use iptables
 firewall_driver="iptables"
 ```
 iptables-nft
+
+#
+add this to make file or
+export PODMAN_IGNORE_CGROUPSV1_WARNING=1
+services:
+  your_service:
+    environment:
+      - PODMAN_IGNORE_CGROUPSV1_WARNING=1
+
+to suppress cgroups warning on wsl

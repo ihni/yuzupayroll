@@ -12,20 +12,25 @@ FOR DATABASE CONFIGURATION
 DATABASE_CONFIG = {
     "host" : "db",
     "user" : "user",
-    "password" : "user",
+    "password" : "pass",
     "database" : "payroll_db",
     "port" : 3306
 }
+
+# number of times to connect and delay in seconds
+CONNECTION_ATTEMPTS = 6
+RECONNECTION_DELAY = 2
 
 """
 FOR LOGGER CONFIGURATION
 """
 
 LOG_LEVEL = "INFO" # INFO, DEBUG, WARNING, ERROR, CRITICAL
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',))
-LOG_DIR = os.path.join(PROJECT_ROOT, 'logs')
+LOG_DIR = '/storage/logs'  # Container path (mounted from ./storage/logs)
+LOG_FILE = 'app.log'
+LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
+LOG_ENCODING = 'utf-8'
 os.makedirs(LOG_DIR, exist_ok=True)
-LOG_PATH = os.path.join(LOG_DIR, 'app.log')
 
 LOG_ROTATION = {
     "maxBytes": 5 * (1024 * 1024), # in megabytes
