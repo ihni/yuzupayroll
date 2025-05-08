@@ -25,3 +25,18 @@ services:
       - PODMAN_IGNORE_CGROUPSV1_WARNING=1
 
 to suppress cgroups warning on wsl
+
+# routes example storing for later
+```python
+@app.route('/employees/<int:emp_id>')
+def get_employee(emp_id):
+    data = EmployeeService.get_by_id(emp_id)
+    if not data:
+        return {"error": "Not found"}, 404
+        
+    employee = Employee(**data)
+    return jsonify(employee.to_dict())
+```
+
+# TODO:
+VALIDATE IF LINE 31 QUERY IS GOOD OR NO
