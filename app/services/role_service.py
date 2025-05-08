@@ -2,6 +2,7 @@ from .. import db
 from mysql.connector import Error as MySQLError
 from ..models import Role
 from ..utils import get_logger
+from ..constants import ErrorCodes
 
 logger = get_logger(__name__)
 
@@ -29,8 +30,9 @@ class RoleService:
             cnx.rollback()
             if err.errno == 1062:
                 logger.warning("Duplicate role name attempted (%s): %s", role.name, err)
+                return ErrorCodes.DUPLICATE_ERROR
             logger.error("Failed to create Role: %s", err)
-            return None
+            return ErrorCodes.INSERT_FAILED
         finally:
             cursor.close()
 

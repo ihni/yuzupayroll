@@ -61,7 +61,6 @@ class Database:
     def close_connection(self):
         if self.connection and self.connection.is_connected():
             self.connection.close()
-            self.connection = None
 
     def __del__(self):
         self.close_connection()

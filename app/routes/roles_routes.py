@@ -30,7 +30,11 @@ def list_roles():
 @roles_bp.route("/create", methods=["POST"])
 def create_role():
     name = request.form["name"]
-    wage = request.form["hourly_rate"]
+    rate = request.form["hourly_rate"]
     result = RoleService.create(
-        Role()
+        Role(name=name, hourly_rate=rate)
     )
+    if result:
+        return redirect(url_for("roles.list_roles"))
+    else:
+        pass # pass an error message here

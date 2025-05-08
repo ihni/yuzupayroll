@@ -1,0 +1,3 @@
+class ErrorCodes:
+    DB_CONNECTION_FAILED = "DB1001"
+    DB_QUERY_FAILED = "DB1002"

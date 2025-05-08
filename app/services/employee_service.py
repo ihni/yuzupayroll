@@ -1,49 +1,33 @@
-from .. import db
-from mysql.connector import Error as MySQLError
 from ..models import Employee
-from ..utils import get_logger
-
+from ..utils import (
+    get_logger, 
+    db_operation,
+    ErrorCodes,
+)
 logger = get_logger(__name__)
 
 class EmployeeService:
-    @staticmethod
-    def create(employee: Employee):
-        cnx = db.get_connection()
-        if not cnx:
-            logger.error("No database connection available.")
-            return None
-        cursor = cnx.cursor()
 
+    @staticmethod
+    @db_operation(commit=True)
+    def create(cursor, employee: Employee):
         query = """
             INSERT INTO employees (first_name, last_name, email, role_id)
-            VALUES
-            (%(first_name)s, %(last_name)s, %(email)s, %(role_id)s)
+            VALUES (%(first_name)s, %(last_name)s, %(email)s, %(role_id)s)
         """
-
         try:
             cursor.execute(query, employee.to_dict_for_insert())
-            cnx.commit()
             logger.info("Employee created with ID: %s", cursor.lastrowid)
-            return cursor.lastrowid
-        except MySQLError as err:
-            cnx.rollback()
-            logger.error("Failed to create Employee: %s", err)
-            return None
-        finally:
-            cursor.close()     
+            return {"success": True, "id": cursor.lastrowid}
+        except Exception as err:
+            error_code = ErrorCodes.DB_QUERY_FAILED
+            logger.error(f"{error_code}: Failed to create employee: {err}")
+            return None  
 
     @staticmethod
-    def get_by_id(emp_id: int) -> Employee:
-        cnx = db.get_connection()
-        if not cnx:
-            logger.error("No database connection available.")
-            return None
-        cursor = cnx.cursor(dictionary=True)
-        
-        query = """
-            SELECT * from employees
-            WHERE id = %s
-        """
+    @db_operation()
+    def get_by_id(cursor, emp_id: int) -> Employee:
+        query = "SELECT * from employees WHERE id = %s"
 
         try:
             cursor.execute(query, (emp_id,))
