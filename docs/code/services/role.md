@@ -1,69 +1,67 @@
 # Role Service
 
-## Purpose
-Provides static functions to access roles and interact with the `roles` table in the  
-database. Includes basic CRUD operations and utility queries by name and rate.
+## Overview
+Manages database operations for the `roles` table and employee role associations. All methods follow the `db_operation` decorator pattern.
 
-## Public functions
+## Interface
 
-### `create(role: Role)`  
-Creates a new role in the database  
-- **Parameters**:  
-    - `role (Role):` an instance of a role model to insert data with  
-- **Return value**:  
-    - the id of the role created (`int`) or `None` on failure  
----
+### `create(cursor, role: Role) -> int`
+Creates a new role entry.
+- **Parameters**:
+  - `role`: Validated Role model instance
+- **Returns**:
+  - ID of the created role
 
-### `get_by_id(role_id: int)`  
-Fetches a single role by its ID  
-- **Parameters**:  
-    - `role_id (int):` the id of the role to fetch  
-- **Return value**:  
-    - a `Role` object or `None` if no result or error  
----
+### `get_by_id(cursor, role_id: int) -> tuple`
+Retrieves a role by ID.
+- **Parameters**:
+  - `role_id`: Role identifier
+- **Returns**:
+  - Tuple of `(query, params)` for single-record fetch
 
-### `get_by_name(role_name: str)`  
-Fetches a single role by its name  
-- **Parameters**:  
-    - `role_name (str):` the name of the role to fetch  
-- **Return value**:  
-    - a `Role` object or `None` if no result or error  
----
+### `get_by_name(cursor, role_name: str) -> tuple`
+Finds a role by exact name match.
+- **Parameters**:
+  - `role_name`: Case-sensitive role name
+- **Returns**:
+  - Tuple for name query
 
-### `get_by_hourly_rate(hourly_rate: float)`  
-Fetches roles with a specific hourly rate  
-- **Parameters**:  
-    - `hourly_rate (float):` the rate value to filter roles by  
-- **Return value**:  
-    - a list of `Role` objects (could be empty)  
----
+### `get_by_hourly_rate(cursor, hourly_rate: float) -> tuple`
+Lists roles with specific hourly rate.
+- **Parameters**:
+  - `hourly_rate`: Exact rate to match
+- **Returns**:
+  - Tuple for rate-based query
 
-### `get_count_emp_by_role_id(role_id: int)`  
-Fetches count of employees with a specific role  
-- **Parameters**:  
-    - `role_id (int):` the role id to filter count of employees by  
-- **Return value**:  
-    - the number of employees in that role
----
+### `get_count_emp_by_role_id(cursor, role_id: int) -> tuple`
+Counts employees assigned to a role.
+- **Parameters**:
+  - `role_id`: Role identifier
+- **Returns**:
+  - Tuple for count query (`COUNT(*) as count`)
 
-### `get_all()`  
-Fetches all roles  
-- **Return value**:  
-    - a list of `Role` objects (could be empty)  
----
+### `update(cursor, role_id: int, update_fields: dict) -> bool`
+Modifies role attributes.
+- **Parameters**:
+  - `role_id`: Target role ID
+  - `update_fields`: Dictionary of `{field: new_value}`
+- **Returns**:
+  - `True` if update succeeded
 
-### `update(role_id: int, update_fields: dict)`  
-Updates a single role by its ID using a dictionary of update fields  
-- **Parameters**:  
-    - `role_id (int):` the id of the role to update  
-    - `update_fields (dict):` a dictionary containing {`field` : `value`}  
-- **Return value**:  
-    - `True` if update was successful or `False` if not  
----
+### `delete(cursor, role_id: int) -> bool`
+Removes a role permanently.
+- **Parameters**:
+  - `role_id`: Role ID to delete
+- **Returns**:
+  - `True` if deletion succeeded
 
-### `delete(role_id: int)`  
-Permanently deletes a single role by its ID  
-- **Parameters**:  
-    - `role_id (int):` the id of the role to delete  
-- **Return value**:  
-    - `True` if deletion was successful or `False` if not  
+### `get_all(cursor) -> tuple`
+Retrieves all roles.
+- **Returns**:
+  - Tuple for full table query
+
+## Design Notes
+- Hourly rates stored with 2 decimal precision
+- Role names are case-sensitive and unique
+- Employee count returns scalar value via `COUNT(*)`
+- All write operations use `commit=True`

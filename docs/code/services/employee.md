@@ -1,69 +1,67 @@
 # Employee Service
 
-## Purpose
-provides static functions to access employees and interact with the `employees` table in the
-database. includes basic CRUD operations
+## Overview
+Provides database operations for the `employees` table using the `db_operation` decorator pattern. All methods are static and thread-safe.
 
-## Public functions
+## Interface
 
-### `create(employee: Employee)`
-creates a new employee in the database
+### `create(cursor, employee: Employee) -> dict`
+Creates a new employee record.
 - **Parameters**:
-    - `employee (Employee):` an instance of an employee model to insert data with
-- **Return value**:
-    - the id of the employee created (`int`) or `None` on failure
----
+  - `employee`: Validated Employee model instance
+- **Returns**:
+  - Dictionary with created employee ID: `{"id": int}`
 
-### `get_by_id(emp_id: int)`
-fetches a single employee by their ID
+### `get_by_id(cursor, emp_id: int) -> tuple`
+Retrieves an employee by ID.
 - **Parameters**:
-    - `emp_id (int):` the id of the employee to fetch
-- **Return value**:
-    - an `Employee` object or `None` if no result or error
----
+  - `emp_id`: Employee ID to query
+- **Returns**:
+  - Tuple of `(query, params)` for decorator processing
 
-### `get_by_email(emp_email: str)`
-fetches a single employee by their email
+### `get_by_email(cursor, emp_email: str) -> tuple`
+Finds an employee by email address.
 - **Parameters**:
-    - `emp_email (str):` the email of the employee to fetch
-- **Return value**:
-    - an `Employee` object or `None` if no result or error
----
+  - `emp_email`: Exact email to match
+- **Returns**:  
+  - Tuple of `(query, params)`
 
-### `get_by_role_id(role_id: int)`
-fetches employees by their role id
+### `get_by_role_id(cursor, role_id: int) -> tuple`
+Lists employees with specific role ID.
 - **Parameters**:
-    - `role_id (int):` the role id of the employees to fetch
-- **Return value**:
-    - a list of `Employee` objects (could be empty)
----
+  - `role_id`: Role identifier
+- **Returns**:
+  - Tuple for multi-row query
 
-### `get_by_role_name(role_name: str)`
-fetches employees by their role name
+### `get_by_role_name(cursor, role_name: str) -> tuple`
+Searches employees by role name pattern.
 - **Parameters**:
-    - `role_name (str):` the role name of the employees to fetch
-- **Return value**:
-    - a list of `Employee` objects (could be empty)
----
+  - `role_name`: Partial role name match (LIKE %pattern%)
+- **Returns**:
+  - Tuple with JOIN query
 
-### `get_all()`
-fetches all employees
-- **Return value**:
-    - a list of `Employee` objects (could be empty)
----
-
-### `update(emp_id: int, update_fields: dict)`
-updates a single employee by their ID using a dictionary of update fields
+### `update(cursor, emp_id: int, update_fields: dict) -> bool`
+Modifies employee fields.
 - **Parameters**:
-    - `emp_id (int):` the id of the employee to update
-    - `update_fields (dict):` a dictionary containing {`field` : `value`}
-- **Return value**:
-    - `True` if update was successful or `False` if not
----
+  - `emp_id`: Target employee ID
+  - `update_fields`: Dictionary of `{field: new_value}`
+- **Returns**:
+  - `True` if any rows were updated
 
-### `delete(emp_id: int)`
-permanently deletes a single employee by their ID
+### `delete(cursor, emp_id: int) -> bool`
+Removes an employee permanently.
 - **Parameters**:
-    - `emp_id (int):` the id of the employee to delete
-- **Return value**:
-    - `True` if deletion was successful or `False` if not
+  - `emp_id`: Employee ID to delete
+- **Returns**:
+  - `True` if deletion succeeded
+
+### `get_all(cursor) -> tuple`
+Retrieves all employees.
+- **Returns**:
+  - Tuple for full table scan query
+
+## Design Notes
+- All methods expect an open database cursor as first parameter (handled by decorator)
+- Fetch methods return raw query tuples for standardized processing
+- Write operations (`create/update/delete`) use `commit=True` decorator parameter
+- Model validation occurs before service layer invocation

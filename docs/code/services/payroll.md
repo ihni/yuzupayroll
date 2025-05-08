@@ -1,78 +1,75 @@
 # Payroll Service
 
-## Purpose
-Provides static functions to access payroll records and interact with the `payroll` table in the  
-database. Includes basic CRUD operations and queries by employee, date range, total hours, and gross pay.
+## Overview
+Handles all database operations for the `payroll` table using the `db_operation` decorator pattern. Provides CRUD operations and payroll-specific queries.
 
-## Public functions
+## Interface
 
-### `create(payroll: Payroll)`  
-Creates a new payroll record in the database  
-- **Parameters**:  
-    - `payroll (Payroll):` an instance of a Payroll model to insert data with  
-- **Return value**:  
-    - the id of the payroll created (`int`) or `None` on failure  
----
+### `create(cursor, payroll: Payroll) -> int`
+Creates a new payroll record.
+- **Parameters**:
+  - `payroll`: Validated Payroll model instance
+- **Returns**:
+  - ID of the created payroll record
 
-### `get_by_id(payroll_id: int)`  
-Fetches a single payroll by its ID  
-- **Parameters**:  
-    - `payroll_id (int):` the id of the payroll to fetch  
-- **Return value**:  
-    - a `Payroll` object or `None` if no result or error  
----
+### `get_by_id(cursor, payroll_id: int) -> tuple`
+Retrieves a payroll record by ID.
+- **Parameters**:
+  - `payroll_id`: Payroll record ID
+- **Returns**:
+  - Tuple of `(query, params)` for single-record fetch
 
-### `get_by_date_range(start: datetime, end: datetime)`  
-Fetches payroll records between a specific date range  
-- **Parameters**:  
-    - `start (datetime):` the start date of the pay period  
-    - `end (datetime):` the end date of the pay period  
-- **Return value**:  
-    - a list of `Payroll` objects (could be empty)  
----
+### `get_by_date_range(cursor, start: datetime, end: datetime) -> tuple`
+Finds payroll records within a date range.
+- **Parameters**:
+  - `start`: Start date (inclusive)
+  - `end`: End date (inclusive)
+- **Returns**:
+  - Tuple for multi-record date range query
 
-### `get_by_employee_id(emp_id: int)`  
-Fetches all payroll records for a specific employee  
-- **Parameters**:  
-    - `emp_id (int):` the employee’s ID  
-- **Return value**:  
-    - a list of `Payroll` objects (could be empty)  
----
+### `get_by_employee_id(cursor, emp_id: int) -> tuple`
+Lists payroll records for a specific employee.
+- **Parameters**:
+  - `emp_id`: Employee ID
+- **Returns**:
+  - Tuple for employee-specific query
 
-### `get_by_total_hours(total_hours: int)`  
-Fetches all payroll records with a specific number of total hours worked  
-- **Parameters**:  
-    - `total_hours (int):` the number of hours worked to filter by  
-- **Return value**:  
-    - a list of `Payroll` objects (could be empty)  
----
+### `get_by_total_hours(cursor, total_hours: int) -> tuple`
+Finds payroll records matching exact hours worked.
+- **Parameters**:
+  - `total_hours`: Exact hours to match
+- **Returns**:
+  - Tuple for hours-based query
 
-### `get_by_gross_pay(gross_pay: int)`  
-Fetches all payroll records with a specific gross pay amount  
-- **Parameters**:  
-    - `gross_pay (int):` the gross pay to filter by  
-- **Return value**:  
-    - a list of `Payroll` objects (could be empty)  
----
+### `get_by_gross_pay(cursor, gross_pay: int) -> tuple`
+Finds payroll records matching exact gross pay amount.
+- **Parameters**:
+  - `gross_pay`: Exact gross pay amount
+- **Returns**:
+  - Tuple for gross pay query
 
-### `get_all()`  
-Fetches all payroll records  
-- **Return value**:  
-    - a list of `Payroll` objects (could be empty)  
----
+### `update(cursor, payroll_id: int, update_fields: dict) -> bool`
+Modifies payroll record fields.
+- **Parameters**:
+  - `payroll_id`: Target payroll ID
+  - `update_fields`: Dictionary of `{field: new_value}`
+- **Returns**:
+  - `True` if any records were updated
 
-### `update(payroll_id: int, update_fields: dict)`  
-Updates a payroll record by its ID using a dictionary of update fields  
-- **Parameters**:  
-    - `payroll_id (int):` the id of the payroll to update  
-    - `update_fields (dict):` a dictionary containing {`field` : `value`}  
-- **Return value**:  
-    - `True` if update was successful or `False` if not  
----
+### `delete(cursor, payroll_id: int) -> bool`
+Removes a payroll record permanently.
+- **Parameters**:
+  - `payroll_id`: Payroll ID to delete
+- **Returns**:
+  - `True` if deletion succeeded
 
-### `delete(payroll_id: int)`  
-Permanently deletes a payroll record by its ID  
-- **Parameters**:  
-    - `payroll_id (int):` the id of the payroll to delete  
-- **Return value**:  
-    - `True` if deletion was successful or `False` if not
+### `get_all(cursor) -> tuple`
+Retrieves all payroll records.
+- **Returns**:
+  - Tuple for full table scan query
+
+## Design Notes
+- Uses `commit=True` for all write operations
+- Date range queries use `BETWEEN` with inclusive bounds
+- All monetary amounts are handled as integers (cents/pence)
+- Model validation occurs before service layer invocation

@@ -41,6 +41,18 @@ class WorkLogService:
         return query, (hours_worked,)
 
     @staticmethod
+    @db_operation(fetch=True, fetch_many=True)
+    def get_by_date_range(cursor, 
+                         start_date: datetime.date, 
+                         end_date: datetime.date) -> tuple:
+        query = """
+            SELECT * FROM work_logs 
+            WHERE date_worked BETWEEN %s AND %s
+            ORDER BY date_worked
+        """, 
+        return query, (start_date, end_date,)
+    
+    @staticmethod
     @db_operation(commit=True)
     def update(cursor, work_log_id: int, update_fields: dict) -> bool:
         if not update_fields:

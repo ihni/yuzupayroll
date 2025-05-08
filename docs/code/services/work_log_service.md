@@ -1,69 +1,75 @@
 # Work Log Service
 
-## Purpose
-Provides static functions to access work logs and interact with the `work_logs` table in the  
-database. Includes basic CRUD operations and queries by employee, date, and hours worked.
+## Overview
+Manages time tracking records in the `work_logs` table using the `db_operation` decorator pattern. Handles employee work hour tracking and reporting.
 
-## Public functions
+## Interface
 
-### `create(work_log: WorkLog)`  
-Creates a new work log in the database  
-- **Parameters**:  
-    - `work_log (WorkLog):` an instance of a WorkLog model to insert data with  
-- **Return value**:  
-    - the id of the work log created (`int`) or `None` on failure  
----
+### `create(cursor, work_log: WorkLog) -> int`
+Records a new work log entry.
+- **Parameters**:
+  - `work_log`: Validated WorkLog model instance
+- **Returns**:
+  - ID of the created work log
 
-### `get_by_id(work_log_id: int)`  
-Fetches a single work log by its ID  
-- **Parameters**:  
-    - `work_log_id (int):` the id of the work log to fetch  
-- **Return value**:  
-    - a `WorkLog` object or `None` if no result or error  
----
+### `get_by_id(cursor, work_log_id: int) -> tuple`
+Retrieves a work log by ID.
+- **Parameters**:
+  - `work_log_id`: Log entry identifier
+- **Returns**:
+  - Tuple of `(query, params)` for single-record fetch
 
-### `get_by_date(date: datetime)`  
-Fetches work logs by the date worked  
-- **Parameters**:  
-    - `date (datetime):` the specific date to search for logs  
-- **Return value**:  
-    - a list of `WorkLog` objects (could be empty)  
----
+### `get_by_date(cursor, date: datetime.date) -> tuple`
+Finds work logs for a specific date.
+- **Parameters**:
+  - `date`: Exact date to query
+- **Returns**:
+  - Tuple for date-specific query
 
-### `get_by_employee_id(emp_id: int)`  
-Fetches all work logs for a specific employee  
-- **Parameters**:  
-    - `emp_id (int):` the employee’s ID  
-- **Return value**:  
-    - a list of `WorkLog` objects (could be empty)  
----
+### `get_by_employee_id(cursor, emp_id: int) -> tuple`
+Lists work logs for an employee.
+- **Parameters**:
+  - `emp_id`: Employee identifier
+- **Returns**:
+  - Tuple for employee-specific query
 
-### `get_by_hour_worked(hours_worked: int)`  
-Fetches all work logs with a specific number of hours worked  
-- **Parameters**:  
-    - `hours_worked (int):` the number of hours to filter by  
-- **Return value**:  
-    - a list of `WorkLog` objects (could be empty)  
----
+### `get_by_hours_worked(cursor, hours: float) -> tuple`
+Finds logs matching exact hours worked.
+- **Parameters**:
+  - `hours`: Precise hours logged (2 decimal places)
+- **Returns**:
+  - Tuple for hours-based query
 
-### `get_all()`  
-Fetches all work logs  
-- **Return value**:  
-    - a list of `WorkLog` objects (could be empty)  
----
+### `get_by_date_range(cursor, start_date: datetime.date, end_date: datetime.date) -> tuple`
+Retrieves logs within a date range.
+- **Parameters**:
+  - `start_date`: Range start (inclusive)
+  - `end_date`: Range end (inclusive)
+- **Returns**:
+  - Tuple for date range query (ordered chronologically)
 
-### `update(work_log_id: int, update_fields: dict)`  
-Updates a work log entry by its ID using a dictionary of update fields  
-- **Parameters**:  
-    - `work_log_id (int):` the id of the work log to update  
-    - `update_fields (dict):` a dictionary containing {`field` : `value`}  
-- **Return value**:  
-    - `True` if update was successful or `False` if not  
----
+### `update(cursor, work_log_id: int, update_fields: dict) -> bool`
+Modifies work log details.
+- **Parameters**:
+  - `work_log_id`: Target log ID
+  - `update_fields`: Dictionary of `{field: new_value}`
+- **Returns**:
+  - `True` if update succeeded
 
-### `delete(work_log_id: int)`  
-Permanently deletes a work log by its ID  
-- **Parameters**:  
-    - `work_log_id (int):` the id of the work log to delete  
-- **Return value**:  
-    - `True` if deletion was successful or `False` if not  
+### `delete(cursor, work_log_id: int) -> bool`
+Removes a work log permanently.
+- **Parameters**:
+  - `work_log_id`: Log entry to delete
+- **Returns**:
+  - `True` if deletion succeeded
+
+### `get_all(cursor) -> tuple`
+Retrieves all work logs.
+- **Returns**:
+  - Tuple for full table query
+
+## Design Notes
+- Hours tracked with 2 decimal precision (0.25 hour increments)
+- Date ranges are inclusive of both start and end dates
+- All write operations use `commit=True`
+- Results ordered by date when applicable
