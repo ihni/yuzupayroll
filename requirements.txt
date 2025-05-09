@@ -3,3 +3,4 @@ SQLAlchemy
 PyMySQL
 Flask-SQLAlchemy
 Flask-Migrate
+cryptography

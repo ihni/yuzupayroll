@@ -28,10 +28,7 @@ FOR SQLALCHEMY CONFIGURATION
 
 class Config:
     #SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DATABASE_CONFIG["user"]}:{DATABASE_CONFIG["password"]}@{DATABASE_CONFIG["host"]}/{DATABASE_CONFIG["database"]}"
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL", 
-        "mysql+pymysql://user:password@db/payroll_db"
-    )
+    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://user:pass@db/payroll_db"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
