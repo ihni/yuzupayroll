@@ -1,2 +1,3 @@
-from .roles_routes import roles_bp
+from .role_routes import roles_bp
 from .home_routes import home_bp
+from .employee_routes import employees_bp
