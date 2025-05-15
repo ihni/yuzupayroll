@@ -12,8 +12,7 @@ DELETE FROM `organization`;
 -- Insert organization data
 INSERT INTO `organization` (`name`, `total_salary_budget`, `budget_start_month`, `budget_start_day`, `budget_end_month`, `budget_end_day`) 
 VALUES 
-('Northern Lights Inc.', 5000000.00, 1, 1, 12, 31),
-('Island Breeze Corp.', 3000000.00, 4, 1, 3, 31);
+('Northern Lights Inc.', 5000000.00, 1, 1, 12, 31);
 
 -- Insert roles with hourly rates
 INSERT INTO `roles` (`name`, `hourly_rate`) 

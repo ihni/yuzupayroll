@@ -47,7 +47,7 @@ class RoleService:
         return role
     
     # TODO:
-    ## CHECK IF ROLE NAME EXISTS FIRST BEFORE UPDATING
+    # CHECK IF ROLE NAME EXISTS FIRST BEFORE UPDATING
     @staticmethod
     def update(role_id, name=None, hourly_rate=None):
         role = Role.query.get(role_id)
@@ -62,6 +62,10 @@ class RoleService:
         if hourly_rate:
             role.hourly_rate = hourly_rate
 
+        if not name and not hourly_rate:
+            logger.info("Tried updating role id {role_id} with empty fields")
+            return None
+
         try:
             db.session.commit()
             logger.info(f"Updated role id {role_id}")
@@ -75,8 +79,8 @@ class RoleService:
             logger.exception(f"Error updating role id '{role_id}'")
             raise
 
-	# TODO:
-    ## ACCOUNT FOR FOREIGN KEY CONSTRAINT(IS EMPLOYEE USING THIS ROLE?)
+    # TODO:
+    # ACCOUNT FOR FOREIGN KEY CONSTRAINT(IS EMPLOYEE USING THIS ROLE?)
     @staticmethod
     def delete(role_id):
         role = Role.query.get(role_id)
