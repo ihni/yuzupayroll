@@ -3,13 +3,16 @@ from logging.handlers import RotatingFileHandler
 from app.config import LoggerConfig
 
 def get_logger(name=__name__):
-    # Set up logger
     logger = logging.getLogger(name)
+
     # defaults to level info
     logger.setLevel(
-        getattr(logging, 
-                LoggerConfig.LOG_LEVEL.upper(), 
-                logging.INFO))
+        getattr(
+            logging, 
+            LoggerConfig.LOG_LEVEL.upper(), 
+            logging.INFO
+            )
+        )
 
     if not logger.handlers:
         formatter = logging.Formatter(LoggerConfig.LOG_FORMATTER)

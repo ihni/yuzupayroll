@@ -1,6 +1,2 @@
-from .config import (
-    Config,
-    CONNECTION_ATTEMPTS,
-    RECONNECTION_DELAY,
-    LoggerConfig,
-)
+from .config import Config
+from .logger import LoggerConfig
