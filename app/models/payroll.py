@@ -1,22 +1,19 @@
-from datetime import datetime
+from app.extensions import db
+from .timestampmixin import TimestampMixin
 
-class Payroll:
-    def __init__(self, id: int, pay_period_start: 
-                 datetime, pay_period_end: datetime, gross_pay: float, 
-                 total_hours: float, employee_id: int):
-        self.id = id                                # pk, int
-        self.pay_period_start = pay_period_start    # datetime
-        self.pay_period_end = pay_period_end        # datetime
-        self.gross_pay = gross_pay                  # decimal(10, 2)
-        self.total_hours = total_hours              # decimal(5, 2)
-        self.employee_id = employee_id              # fk, int
+class Payroll(db.Model, TimestampMixin):
+    __tablename__ = "payroll"
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "pay_period_start": self.pay_period_start,
-            "pay_period_end": self.pay_period_end,
-            "gross_pay": self.gross_pay,
-            "total_hours": self.total_hours,
-            "employee_id": self.employee_id
-        }
+    id = db.Column(db.Integer, primary_key=True)
+    pay_period_start = db.Column(db.DateTime, nullable=False)
+    pay_period_end = db.Column(db.DateTime, nullable=False)
+    gross_pay = db.Column(db.Numeric(10, 2), nullable=False)
+    total_hours = db.Column(db.Numeric(5, 2), nullable=False)
+
+    employee_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('employees.id'), 
+        nullable=False
+    )
+    employee = db.relationship('Employee', backref='payrolls')
+

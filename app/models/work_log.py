@@ -1,16 +1,16 @@
-from datetime import datetime
+from app.extensions import db
+from .timestampmixin import TimestampMixin
 
-class WorkLog:
-    def __init__(self, id: int, date_worked: datetime, hours_worked: float, employee_id: int):
-        self.id = id                        # pk, int
-        self.date_worked = date_worked      # datetime
-        self.hours_worked = hours_worked    # decimal(4, 2)
-        self.employee_id = employee_id      # fk, int
+class WorkLog(db.Model, TimestampMixin):
+    __tablename__ = "work_logs"
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "date_worked": self.date_worked,
-            "hours_worked": self.hours_worked,
-            "employee_id": self.employee_id,
-        }
+    id = db.Column(db.Integer, primary_key=True)
+    date_worked = db.Column(db.DateTime, nullable=False)
+    hours_worked = db.Column(db.Numeric(4, 2), nullable=False)
+
+    employee_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('employees.id'), 
+        nullable=False
+    )
+    employee = db.relationship('Employee', backref='work_logs')

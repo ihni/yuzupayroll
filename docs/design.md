@@ -13,4 +13,4 @@ This is a payroll management system for handling employee work logs, payroll gen
 ## Architecture
 - Backend: Python (Flask)
 - DB: MySQL 8 (via Podman)
-- ORM: To Be Decided (Raw SQL for now)
+- ORM: SQLAlchemy (via Flask Migrate)

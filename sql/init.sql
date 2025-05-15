@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`roles` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(45) NOT NULL,
   `hourly_rate` DECIMAL(10,2) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `name_UNIQUE` (`name` ASC))
 ENGINE = InnoDB;
@@ -34,6 +36,8 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`employees` (
   `last_name` VARCHAR(45) NOT NULL,
   `role_id` INT NOT NULL,
   `email` VARCHAR(45) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `role_id_idx` (`role_id` ASC),
   UNIQUE INDEX `email_UNIQUE` (`email` ASC),
@@ -53,9 +57,11 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`work_logs` (
   `date_worked` DATETIME NOT NULL,
   `hours_worked` DECIMAL(4,2) NOT NULL,
   `employee_id` INT NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `employee_id_idx` (`employee_id` ASC),
-  CONSTRAINT `fk_worklogs_employee_id`
+  CONSTRAINT `fk_work_logs_employee_id`
     FOREIGN KEY (`employee_id`)
     REFERENCES `payroll_db`.`employees` (`id`)
     ON DELETE NO ACTION
@@ -73,6 +79,8 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`payroll` (
   `gross_pay` DECIMAL(10,2) NOT NULL,
   `total_hours` DECIMAL(5,2) NOT NULL,
   `employee_id` INT NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `employee_id_idx` (`employee_id` ASC),
   CONSTRAINT `fk_payroll_employee_id`
@@ -94,6 +102,8 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`organization` (
   `budget_start_day` INT NOT NULL DEFAULT 1,
   `budget_end_month` INT NOT NULL DEFAULT 12,
   `budget_end_day` INT NOT NULL DEFAULT 31,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 

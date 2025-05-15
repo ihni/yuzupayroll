@@ -1,22 +1,23 @@
-from flask import Flask, render_template # type: ignore
-from .database import Database
-from .config import (
-    DATABASE_CONFIG,
-    RECONNECTION_DELAY,
-    CONNECTION_ATTEMPTS
-)
-db = Database(
-    **DATABASE_CONFIG, 
-    attempts=CONNECTION_ATTEMPTS, 
-    delay=RECONNECTION_DELAY
-)
+from flask import Flask
+from app.extensions import db
+from app.config import Config
 
 def create_app():
+
     app = Flask(__name__)
+    app.config.from_object(Config)
 
-    @app.route('/')
+    db.init_app(app)
 
-    def placeholder_dashboard():
-        return render_template('layouts/test.html')
+    # import routeres here:
+    from app.routes import roles_bp
+    from app.routes import home_bp
+    from app.routes import employees_bp
     
+    # register blueprints here:
+    app.register_blueprint(home_bp)
+    app.register_blueprint(roles_bp)
+    app.register_blueprint(employees_bp)
+
+
     return app

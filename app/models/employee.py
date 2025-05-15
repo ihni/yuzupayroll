@@ -1,16 +1,17 @@
-class Employee:
-    def __init__(self, id: int, first_name: str, last_name: str, email: str, role_id: int):
-        self.id = id                    # pk, int
-        self.first_name = first_name    # varchar(45)
-        self.last_name = last_name      # varchar(45)
-        self.email = email              # varchar(45), unique
-        self.role_id = role_id          # fk, int
-    
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "email": self.email,
-            "role_id": self.role_id
-        }
+from app.extensions import db
+from .timestampmixin import TimestampMixin
+
+class Employee(db.Model, TimestampMixin):
+    __tablename__ = 'employees'
+
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(45), nullable=False)
+    last_name = db.Column(db.String(45), nullable=False)
+    email = db.Column(db.String(45), unique=True, nullable=False)
+
+    role_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('roles.id'), 
+        nullable=False
+    )
+    role = db.relationship('Role', backref='employees')

@@ -1,20 +1,21 @@
 import logging
 from logging.handlers import RotatingFileHandler
-from ...config import (
-    LOG_LEVEL, 
-    LOG_FORMATTER, 
-    LOG_PATH,
-    LOG_ROTATION,
-)
+from app.config import LoggerConfig
 
 def get_logger(name=__name__):
-    # Set up logger
     logger = logging.getLogger(name)
+
     # defaults to level info
-    logger.setLevel(getattr(logging, LOG_LEVEL.upper(), logging.INFO))
+    logger.setLevel(
+        getattr(
+            logging, 
+            LoggerConfig.LOG_LEVEL.upper(), 
+            logging.INFO
+            )
+        )
 
     if not logger.handlers:
-        formatter = logging.Formatter(LOG_FORMATTER)
+        formatter = logging.Formatter(LoggerConfig.LOG_FORMATTER)
 
         # Log to stdout
         stream_handler = logging.StreamHandler()
@@ -23,8 +24,8 @@ def get_logger(name=__name__):
 
         # Log to file with rotation
         file_handler = RotatingFileHandler(
-            LOG_PATH,
-            **LOG_ROTATION,
+            LoggerConfig.LOG_PATH,
+            **LoggerConfig.LOG_ROTATION,
         )
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)

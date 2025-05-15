@@ -1,42 +1,13 @@
-"""
-THE SETTINGS ARE OPEN FOR ACADEMIC 
-REASONS, NO NEED FOR A SEPERATE .env
-"""
+from .database import DB
 
-import os
-
-"""
-FOR DATABASE CONFIGURATION
-"""
-
-DATABASE_CONFIG = {
-    "host" : "db",
-    "user" : "user",
-    "password" : "pass",
-    "database" : "payroll_db",
-    "port" : 3306
-}
-
-# number of times to connect and delay in seconds
-CONNECTION_ATTEMPTS = 6
-RECONNECTION_DELAY = 2
-
-"""
-FOR LOGGER CONFIGURATION
-"""
-
-LOG_LEVEL = "INFO" # INFO, DEBUG, WARNING, ERROR, CRITICAL
-LOG_DIR = '/storage/logs'  # Container path (mounted from ./storage/logs)
-LOG_FILE = 'app.log'
-LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
-LOG_ENCODING = 'utf-8'
-os.makedirs(LOG_DIR, exist_ok=True)
-
-LOG_ROTATION = {
-    "maxBytes": 5 * (1024 * 1024), # in megabytes
-    "backupCount": 3
-} 
-
-LOG_FORMATTER = (
-    "%(asctime)s | %(levelname)s | %(name)s | %(filename)s:%(lineno)d | %(message)s"
-)
+class Config:
+    SQLALCHEMY_DATABASE_URI = (
+        f"{DB.CONFIG['dialect']}+"
+        f"{DB.CONFIG['driver']}://"
+        f"{DB.CONFIG['user']}:"
+        f"{DB.CONFIG['password']}@"
+        f"{DB.CONFIG['host']}:"
+        f"{DB.CONFIG['port']}/"
+        f"{DB.CONFIG['database']}"
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False

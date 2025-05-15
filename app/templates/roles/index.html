@@ -1,0 +1,34 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Roles{% endblock %}
+
+{% block content %}
+<h2>Roles</h2>
+
+<form method="POST" action="{{ url_for('roles.create_role') }}">
+    <label for="name">Role Name:</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="hourly_rate">Hourly Rate:</label>
+    <input type="number" step="0.01" id="hourly_rate" name="hourly_rate" required>
+
+    <button type="submit">Create</button>
+</form>
+
+<h2>All Roles</h2>
+<ul>
+    {% for role in roles %}
+        <li>
+            <strong>{{ role.name }}</strong> - ${{ role.hourly_rate }} / hr
+            <form action="{{ url_for('roles.update_role', role_id=role.id) }}" method="post" style="display:inline;">
+                <input type="text" name="name" placeholder="New name">
+                <input type="number" step="0.01" name="hourly_rate" placeholder="New rate">
+                <button type="submit">Update</button>
+            </form>
+            <form action="{{ url_for('roles.delete_role', role_id=role.id) }}" method="post" style="display:inline;">
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}
