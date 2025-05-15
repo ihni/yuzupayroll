@@ -9,7 +9,7 @@ class Employee(db.Model, TimestampMixin):
     last_name = db.Column(db.String(45), nullable=False)
     email = db.Column(db.String(45), unique=True, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
-    deleted_at = db.Column(db.DateTime, nullable=True)
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     role_id = db.Column(
         db.Integer, 

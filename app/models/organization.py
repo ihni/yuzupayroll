@@ -11,4 +11,4 @@ class Organization(db.Model, TimestampMixin):
     budget_start_day= db.Column(db.Integer, default=1)
     budget_end_month = db.Column(db.Integer, default=12)
     budget_end_day = db.Column(db.Integer, default=31)
-    tax_rate = db.Column(db.Numerid(5, 4), nullable=False, default=0.0000)
+    tax_rate = db.Column(db.Numeric(5, 4), nullable=False, default=0.0000)

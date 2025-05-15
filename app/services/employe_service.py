@@ -1,6 +1,7 @@
 from app.utils import get_logger
 from app.extensions import db
 from app.models import Employee
+from datetime import datetime, timezone
 
 logger = get_logger(__name__)
 
@@ -89,24 +90,27 @@ class EmployeeService:
             logger.exception(f"Error updating employee id '{emp_id }'")
             raise
 
-    # TODO:
-    # CASCADE DELETE OR NO?
-    # but if cascade in payroll app, payroll snapshots are gone?
-    # free money then?
     @staticmethod
     def delete(emp_id):
         employee = Employee.query.get(emp_id)
         if not employee:
             logger.info(f"Delete failed: No employee found with id '{emp_id}'")
             return False
+        
+        if employee.is_deleted:
+            logger.info(f"Delete failed: employee id '{emp_id}' is already marked deleted")
+            return False
             
         try:
-            # db.session.delete(employee) # soft deletions instead of perm deletions to keep records intact
-            return
+            employee.is_deleted = True
+            employee.deleted_at = datetime.now(timezone.utc)
             db.session.commit()
-            logger.info(f"Deleted employee id '{emp_id}'")
+            logger.info(f"Soft deleted employee id '{emp_id}'")
             return True
         except Exception as e:
             db.session.rollback()
             logger.exception(f"Error deleting employee id '{emp_id}'")
             raise
+
+    #TODO:
+    # add a restore function later
