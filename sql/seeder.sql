@@ -10,10 +10,9 @@ DELETE FROM `roles`;
 DELETE FROM `organization`;
 
 -- Insert organization data
-INSERT INTO `organization` (`name`, `total_salary_budget`, `budget_start_month`, `budget_start_day`, `budget_end_month`, `budget_end_day`) 
+INSERT INTO `organization` (`name`, `total_salary_budget`, `budget_start_month`, `budget_start_day`, `budget_end_month`, `budget_end_day`, `tax_rate`) 
 VALUES 
-('Northern Lights Inc.', 5000000.00, 1, 1, 12, 31),
-('Island Breeze Corp.', 3000000.00, 4, 1, 3, 31);
+('Northern Lights Inc.', 5000000.00, 1, 1, 12, 31, 0.05);
 
 -- Insert roles with hourly rates
 INSERT INTO `roles` (`name`, `hourly_rate`) 
@@ -51,10 +50,10 @@ VALUES
 ('Erik', 'Svensson', 3, 'erik.svensson@example.com', NOW(), NOW()),
 ('Sofia', 'Gustafsson', 4, 'sofia.gustafsson@example.com', NOW(), NOW());
 
--- Insert work logs (random hours between 4 and 12 for last 30 days, approx 10 logs per employee)
+-- Insert work logs (random hours between 4 and 12 for the past 90 days, ~30 logs per employee)
 INSERT INTO `work_logs` (`date_worked`, `hours_worked`, `employee_id`, `created_at`, `updated_at`)
 SELECT 
-    DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND() * 30) DAY) AS date_worked,
+    DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND() * 90) DAY) AS date_worked,
     ROUND(4 + (RAND() * 8), 2) AS hours_worked,
     e.id AS employee_id,
     NOW(),
@@ -62,9 +61,14 @@ SELECT
 FROM 
     employees e
 CROSS JOIN 
-    (SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10) AS numbers
+    (SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION 
+            SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10 
+            UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14 UNION SELECT 15 
+            UNION SELECT 16 UNION SELECT 17 UNION SELECT 18 UNION SELECT 19 UNION SELECT 20 
+            UNION SELECT 21 UNION SELECT 22 UNION SELECT 23 UNION SELECT 24 UNION SELECT 25 
+            UNION SELECT 26 UNION SELECT 27 UNION SELECT 28 UNION SELECT 29 UNION SELECT 30) AS numbers
 ORDER BY RAND()
-LIMIT 200;
+LIMIT 1000;
 
 -- Insert payroll for last 3 months grouped by employee and month, calculating totals from work logs and roles
 INSERT INTO `payroll` (`pay_period_start`, `pay_period_end`, `gross_pay`, `total_hours`, `employee_id`, `created_at`, `updated_at`)

@@ -101,7 +101,8 @@ class EmployeeService:
             return False
             
         try:
-            db.session.delete(employee)
+            # db.session.delete(employee) # soft deletions instead of perm deletions to keep records intact
+            return
             db.session.commit()
             logger.info(f"Deleted employee id '{emp_id}'")
             return True
