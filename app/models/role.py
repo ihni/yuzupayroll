@@ -1,6 +1,7 @@
 from app.extensions import db
+from .timestampmixin import TimestampMixin
 
-class Role(db.Model):
+class Role(db.Model, TimestampMixin):
     __tablename__ = 'roles'
     
     id = db.Column(db.Integer, primary_key=True)

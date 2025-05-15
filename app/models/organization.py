@@ -1,6 +1,7 @@
 from app.extensions import db
+from .timestampmixin import TimestampMixin
 
-class Organization(db.Model):
+class Organization(db.Model, TimestampMixin):
     __tablename__ = 'organization'
 
     id = db.Column(db.Integer, primary_key=True)

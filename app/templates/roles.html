@@ -5,7 +5,10 @@
   <h1>Roles</h1>
   <ul>
     {% for role in roles %}
-      <li>{{ role.name }} - ${{ role.hourly_rate }}</li>
+      <li>{{ role.name }} - ${{ role.hourly_rate }} {{ role.created_at}} {{ role.updated_at}}</li>
+      {% for employee in role.employees %}
+      <li>{{ employee.first_name }} {{ employee.last_name }}</li>
+      {% endfor %}
     {% endfor %}
   </ul>
 </body>
