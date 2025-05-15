@@ -30,7 +30,7 @@ class RoleService:
     
     @staticmethod
     def get_by_id(role_id):
-        role = Role.query.all()
+        role = Role.query.get(role_id)
         if role:
             logger.info(f"Found role id '{role_id}'")
         else:
@@ -46,8 +46,6 @@ class RoleService:
             logger.info(f"No role found with name '{name}'")
         return role
     
-    # TODO:
-    # CHECK IF ROLE NAME EXISTS FIRST BEFORE UPDATING
     @staticmethod
     def update(role_id, name=None, hourly_rate=None):
         role = Role.query.get(role_id)
@@ -56,7 +54,7 @@ class RoleService:
             return None
 
         if not name and not hourly_rate:
-            logger.info("Tried updating role id {role_id} with empty fields")
+            logger.info(f"Tried updating role id '{role_id}' with empty fields")
             return None
 
         if name and name != role.name:
@@ -90,15 +88,17 @@ class RoleService:
             logger.exception(f"Error updating role id '{role_id}'")
             raise
 
-    # TODO:
-    # ACCOUNT FOR FOREIGN KEY CONSTRAINT(IS EMPLOYEE USING THIS ROLE?)
     @staticmethod
     def delete(role_id):
         role = Role.query.get(role_id)
         if not role:
             logger.info(f"Delete failed: No role found with id '{role_id}'")
             return False
-            
+        
+        if role.employees and len(role.employees) > 0:
+            logger.info(f"Delete failed: role id '{role_id}' is assigned to {len(role.employees)} employee(s)")
+            return False
+
         try:
             db.session.delete(role)
             db.session.commit()

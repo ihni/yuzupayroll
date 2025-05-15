@@ -48,7 +48,7 @@ class EmployeeService:
             return None
         
         if not any([first_name, last_name, email, role_id]):
-            logger.info("Tried updating employee id '{employee.role_id}' with empty fields")
+            logger.info(f"Tried updating employee id '{employee.role_id}' with empty fields")
             return None
 
         if email and email != employee.email:
@@ -112,5 +112,24 @@ class EmployeeService:
             logger.exception(f"Error deleting employee id '{emp_id}'")
             raise
 
-    #TODO:
-    # add a restore function later
+    @staticmethod
+    def restore(emp_id):
+        employee = Employee.query.get(emp_id)
+        if not employee:
+            logger.info(f"Restore failed: No employee found with id '{emp_id}'")
+            return False
+        
+        if not employee.is_deleted:
+            logger.info(f"Restore failed: employee id '{emp_id}' is not marked deleted")
+            return False
+            
+        try:
+            employee.is_deleted = False
+            employee.deleted_at = None
+            db.session.commit()
+            logger.info(f"Restored employee id '{emp_id}'")
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logger.exception(f"Error restoring employee id '{emp_id}'")
+            raise
