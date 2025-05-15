@@ -34,7 +34,7 @@ class RoleService:
         if role:
             logger.info(f"Found role id '{role_id}'")
         else:
-            logger.warning(f"No role found with id '{role_id}'")
+            logger.info(f"No role found with id '{role_id}'")
         return role
     
     @staticmethod
@@ -43,7 +43,7 @@ class RoleService:
         if role:
             logger.info(f"Found role name '{name}'")
         else: 
-            logger.warning(f"No role found with name '{name}'")
+            logger.info(f"No role found with name '{name}'")
         return role
     
     # TODO:
@@ -52,27 +52,38 @@ class RoleService:
     def update(role_id, name=None, hourly_rate=None):
         role = Role.query.get(role_id)
         if not role:
+            logger.info(f"Update failed: No role found with id '{role_id}'")
             return None
-        
-        old_name = role.name
-        old_rate = role.hourly_rate
-
-        if name:
-            role.name = name
-        if hourly_rate:
-            role.hourly_rate = hourly_rate
 
         if not name and not hourly_rate:
             logger.info("Tried updating role id {role_id} with empty fields")
             return None
 
+        if name and name != role.name:
+            existing = Role.query.filter_by(name=name).first()
+            if existing:
+                logger.info(f"Update failed: Role '{name}' already in use")
+                return None
+
+        old_name = role.name
+        old_rate = role.hourly_rate
+
+        updates = {
+            "name": name,
+            "hourly_rate": hourly_rate,
+        }
+
+        for attr, value in updates:
+            if value is not None:
+                setattr(role, attr, value)
+
         try:
             db.session.commit()
             logger.info(f"Updated role id {role_id}")
             if name:
-                logger.info(f"Updated old name '{old_name} -> '{name}'")
+                logger.info(f"Name '{old_name} -> '{name}'")
             if hourly_rate:
-                logger.info(f"Updated old rate '${old_rate} -> '${hourly_rate}'")
+                logger.info(f"Rate '${old_rate} -> '${hourly_rate}'")
             return role
         except Exception as e:
             db.session.rollback()
@@ -85,7 +96,7 @@ class RoleService:
     def delete(role_id):
         role = Role.query.get(role_id)
         if not role:
-            logger.warning(f"Delete failed: No role found with id '{role_id}'")
+            logger.info(f"Delete failed: No role found with id '{role_id}'")
             return False
             
         try:

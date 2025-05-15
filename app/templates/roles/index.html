@@ -19,7 +19,7 @@
 <ul>
     {% for role in roles %}
         <li>
-            <strong>{{ role.name }}</strong> - ${{ role.hourly_rate }} / hr
+            <strong>{{ role.name }}</strong> - ${{ role.hourly_rate }} / hr - {{ role.employees | length }} total employees
             <form action="{{ url_for('roles.update_role', role_id=role.id) }}" method="post" style="display:inline;">
                 <input type="text" name="name" placeholder="New name">
                 <input type="number" step="0.01" name="hourly_rate" placeholder="New rate">
