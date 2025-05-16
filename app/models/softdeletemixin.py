@@ -11,14 +11,10 @@ class SoftDeleteMixin:
     def soft_delete(self):
         self.is_deleted = True
         self.deleted_at = utc_now()
-        if hasattr(self, 'updated_at'):
-            self.updated_at = utc_now()
 
     def restore(self):
         self.is_deleted = False
         self.deleted_at = None
-        if hasattr(self, 'updated_at'):
-            self.updated_at = utc_now()
 
     @classmethod
     def query_not_deleted(cls):

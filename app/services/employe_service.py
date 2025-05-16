@@ -28,8 +28,13 @@ class EmployeeService:
     @staticmethod
     def get_all():
         employees = Employee.query.all()
-        logger.info(f"Fetched {len(employees)} roles")
+        logger.info(f"Fetched {len(employees)} employee/s")
         return employees
+    
+    @staticmethod
+    def get_all_active():
+        employees = Employee.query_not_deleted().all()
+        logger.info(f"Fetched {len(employees)} active employee/s")
 
     @staticmethod
     def get_by_id(emp_id):
@@ -45,6 +50,10 @@ class EmployeeService:
         employee = Employee.query.get(emp_id)
         if not employee:
             logger.info(f"Update failed: No employee found with id '{emp_id}'")
+            return None
+        
+        if employee.is_deleted:
+            logger.info(f"Attempted update on deleted employee id '{emp_id}'")
             return None
         
         if not any([first_name, last_name, email, role_id]):
@@ -75,7 +84,7 @@ class EmployeeService:
 
         try:
             db.session.commit()
-            logger.info(f"Updated employee id {emp_id}")
+            logger.info(f"Updated employee id '{emp_id}'")
             if first_name:
                 logger.info(f"First name '{old_first_name} -> '{first_name}'")
             if last_name:
@@ -102,8 +111,7 @@ class EmployeeService:
             return False
             
         try:
-            employee.is_deleted = True
-            employee.deleted_at = datetime.now(timezone.utc)
+            employee.soft_delete()
             db.session.commit()
             logger.info(f"Soft deleted employee id '{emp_id}'")
             return True
@@ -124,8 +132,7 @@ class EmployeeService:
             return False
             
         try:
-            employee.is_deleted = False
-            employee.deleted_at = None
+            employee.restore()
             db.session.commit()
             logger.info(f"Restored employee id '{emp_id}'")
             return True

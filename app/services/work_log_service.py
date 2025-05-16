@@ -54,6 +54,10 @@ class WorkLogService:
             logger.info(f"Update failed: No work log found with id '{work_log_id}'")
             return None
 
+        if work_log.is_deleted:
+            logger.info(f"Attempted update on work log id '{work_log_id}'")
+            return None
+
         if not date_worked and not hours_worked:
             logger.info(f"Tried updating work log id '{work_log_id}' with empty fields")
             return None
@@ -72,7 +76,7 @@ class WorkLogService:
 
         try:
             db.session.commit()
-            logger.info(f"Updated work log id {work_log_id}")
+            logger.info(f"Updated work log id '{work_log_id}'")
             if date_worked:
                 logger.info(f"Date '{old_date} -> '{date_worked}'")
             if hours_worked:
@@ -83,8 +87,6 @@ class WorkLogService:
             logger.exception(f"Error updating work log id '{work_log_id}'")
             raise
 
-    # TODO:
-    # soft delete or hard delete or both(if soft then i need to add it to the entities and models)
     @staticmethod
     def delete(work_log_id):
         work_log = WorkLog.query.get(work_log_id)
@@ -92,12 +94,37 @@ class WorkLogService:
             logger.info(f"Delete failed: No work log found with id '{work_log_id}'")
             return False
 
+        if work_log.is_deleted:
+            logger.info(f"Delete failed: work log id '{work_log_id}' is already marked deleted")
+            return False
+
         try:
-            db.session.delete(work_log)
+            work_log.soft_delete()
             db.session.commit()
             logger.info(f"Deleted work log id '{work_log_id}'")
             return True
         except Exception as e:
             db.session.rollback()
             logger.exception(f"Error deleting work log id '{work_log_id}'")
+            raise
+
+    @staticmethod
+    def restore(work_log_id):
+        work_log = WorkLog.query.get(work_log_id)
+        if not work_log:
+            logger.info(f"Restore failed: No work log found with id '{work_log_id}'")
+            return False
+        
+        if not work_log.is_deleted:
+            logger.info(f"Restore failed: work log id '{work_log_id}' is not marked deleted")
+            return False
+            
+        try:
+            work_log.restore()
+            db.session.commit()
+            logger.info(f"Restored work log id '{work_log_id}'")
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logger.exception(f"Error restoring work log id '{work_log_id}'")
             raise

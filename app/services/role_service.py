@@ -77,7 +77,7 @@ class RoleService:
 
         try:
             db.session.commit()
-            logger.info(f"Updated role id {role_id}")
+            logger.info(f"Updated role id '{role_id}'")
             if name:
                 logger.info(f"Name '{old_name} -> '{name}'")
             if hourly_rate:
