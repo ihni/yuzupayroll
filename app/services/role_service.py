@@ -71,7 +71,7 @@ class RoleService:
             "hourly_rate": hourly_rate,
         }
 
-        for attr, value in updates:
+        for attr, value in updates.items():
             if value is not None:
                 setattr(role, attr, value)
 

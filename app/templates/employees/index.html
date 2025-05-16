@@ -5,7 +5,7 @@
 {% block content %}
 <h2>Employees</h2>
 <ul>
-    {% for employee in employees %}
+    {% for employee in active_employees %}
         <li>{{ employee.first_name }}  {{ employee.last_name }} - {{ employee.email }} - {{employee.role.name}}</li>
     {% endfor %}
 </ul>

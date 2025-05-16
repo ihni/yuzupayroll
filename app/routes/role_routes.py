@@ -25,6 +25,18 @@ def create_role():
 def update_role(role_id):
     name = request.form.get("name")
     hourly_rate = request.form.get("hourly_rate")
+
+    name = name if name else None
+    
+    if hourly_rate:
+        if 0.00 < float(hourly_rate) < 99999999.99:
+            hourly_rate = float(hourly_rate)
+        else: 
+            hourly_rate = None
+    else:
+        hourly_rate = None
+    
+
     RoleService.update(
         role_id=role_id,
         name=name,

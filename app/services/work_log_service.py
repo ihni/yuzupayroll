@@ -30,6 +30,18 @@ class WorkLogService:
         return work_logs
     
     @staticmethod
+    def get_all_active():
+        work_logs = WorkLog.query_not_deleted().all()
+        logger.info(f"Fetched {len(work_logs)} active work log/s")
+        return work_logs
+    
+    @staticmethod
+    def get_all_deleted():
+        work_logs = WorkLog.query_deleted().all()
+        logger.info(f"Fetched {len(work_logs)} deleted work log/s")
+        return work_logs
+    
+    @staticmethod
     def get_by_id(work_log_id):
         work_log = WorkLog.query.get(work_log_id)
         if work_log:
@@ -70,7 +82,7 @@ class WorkLogService:
             "hours_worked": hours_worked,
         }
 
-        for attr, value in updates:
+        for attr, value in updates.items():
             if value is not None:
                 setattr(work_log, attr, value)
 

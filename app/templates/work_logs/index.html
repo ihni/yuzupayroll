@@ -1,0 +1,49 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Work Logs{% endblock %}
+
+{% block content %}
+<h2>Create Work Log</h2>
+
+<form method="POST" action="{{ url_for('work_logs.create_work_log') }}">
+    <label for="employee_id">Employee ID:</label>
+    <input type="number" name="employee_id" id="employee_id" required>
+
+    <label for="date_worked">Date Worked:</label>
+    <input type="date" name="date_worked" id="date_worked" required>
+
+    <label for="hours_worked">Hours Worked:</label>
+    <input type="number" name="hours_worked" id="hours_worked" step="0.1" required>
+
+    <button type="submit">Create</button>
+</form>
+
+<h2>Active Work Logs</h2>
+<ul>
+    {% for log in active_logs %}
+        <li>
+            ID: {{ log.id }} | Emp: {{ log.employee_id }} | Date: {{ log.date_worked }} | Hours: {{ log.hours_worked }}
+            <form method="POST" action="{{ url_for('work_logs.update_work_log', work_log_id=log.id) }}" style="display:inline;">
+                <input type="date" name="date_worked" placeholder="New date">
+                <input type="number" name="hours_worked" step="0.1" placeholder="New hours">
+                <button type="submit">Update</button>
+            </form>
+            <form method="POST" action="{{ url_for('work_logs.delete_work_log', work_log_id=log.id) }}" style="display:inline;">
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+
+<h2>Deleted Work Logs</h2>
+<ul>
+    {% for log in deleted_logs %}
+        <li>
+            ID: {{ log.id }} | Emp: {{ log.employee_id }} | Date: {{ log.date_worked }} | Hours: {{ log.hours_worked }}
+            <form method="POST" action="{{ url_for('work_logs.restore_work_log', work_log_id=log.id) }}" style="display:inline;">
+                <button type="submit">Restore</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}

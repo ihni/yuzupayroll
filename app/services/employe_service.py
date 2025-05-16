@@ -37,6 +37,11 @@ class EmployeeService:
         logger.info(f"Fetched {len(employees)} active employee/s")
 
     @staticmethod
+    def get_all_deleted():
+        employees = Employee.query_deleted().all()
+        logger.info(f"Fetched {len(employees)} deleted employee/s")
+
+    @staticmethod
     def get_by_id(emp_id):
         employee = Employee.query.get(emp_id)
         if employee:
@@ -78,7 +83,7 @@ class EmployeeService:
             "role_id": role_id,
         }
 
-        for attr, value in updates:
+        for attr, value in updates.items():
             if value is not None:
                 setattr(employee, attr, value)
 

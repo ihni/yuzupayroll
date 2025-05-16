@@ -19,3 +19,7 @@ class SoftDeleteMixin:
     @classmethod
     def query_not_deleted(cls):
         return cls.query.filter_by(is_deleted=False)
+    
+    @classmethod
+    def query_deleted(cls):
+        return cls.query.filter_by(is_deleted=True)
