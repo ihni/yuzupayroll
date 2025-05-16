@@ -1,7 +1,8 @@
 from app.extensions import db
 from .timestampmixin import TimestampMixin
+from .softdeletemixin import SoftDeleteMixin
 
-class Payroll(db.Model, TimestampMixin):
+class Payroll(db.Model, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "payroll"
 
     id = db.Column(db.Integer, primary_key=True)

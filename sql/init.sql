@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`work_logs` (
   `employee_id` INT NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_deleted` TINYINT NOT NULL DEFAULT 0,
+  `deleted_at` DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   INDEX `employee_id_idx` (`employee_id` ASC),
   CONSTRAINT `fk_work_logs_employee_id`
@@ -83,6 +85,8 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`payroll` (
   `employee_id` INT NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_deleted` TINYINT NOT NULL DEFAULT 0,
+  `deleted_at` DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   INDEX `employee_id_idx` (`employee_id` ASC),
   CONSTRAINT `fk_payroll_employee_id`
