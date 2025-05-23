@@ -1,0 +1,12 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Payrolls{% endblock %}
+
+{% block content %}
+<h2>Payrolls</h2>
+<ul>
+    {% for payroll in active_payrolls %}
+        <li>{{ payroll.employee.first_name }}  {{ payroll.employee.last_name }} - {{ payroll.total_hours }} - ${{ payroll.gross_pay }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

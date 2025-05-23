@@ -35,11 +35,13 @@ class EmployeeService:
     def get_all_active():
         employees = Employee.query_not_deleted().all()
         logger.info(f"Fetched {len(employees)} active employee/s")
+        return employees
 
     @staticmethod
     def get_all_deleted():
         employees = Employee.query_deleted().all()
         logger.info(f"Fetched {len(employees)} deleted employee/s")
+        return employees
 
     @staticmethod
     def get_by_id(emp_id):

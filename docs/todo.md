@@ -1,13 +1,4 @@
-jsonify services and routes for proper api responses
-
-example:
-```python
-    if not success:
-        return jsonify({'error': 'Delete failed or already deleted'}), 400
-    return jsonify({'message': 'Work log deleted'}), 200
-```
-
-also serialize data in the models:
+add to dict for easier access in templates
 ```python
     def to_dict(self):
         return {
@@ -23,3 +14,5 @@ also serialize data in the models:
 ```
 
 also first validate in routers layer if data is valid too before passing it to services to process
+
+update services update function especially when checking fields(just check dict if value is changed so logging is shorter---loop it!)
