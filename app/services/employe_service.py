@@ -1,162 +1,156 @@
 from app.utils import get_logger
 from app.extensions import db
-from app.models import Employee
+from app.models import Employee, EmployeeStatusEnum
 from datetime import datetime, timezone
+from sqlalchemy.exc import SQLAlchemyError
 
 logger = get_logger(__name__)
 
 class EmployeeService:
 
     @staticmethod
-    def create(first_name, last_name, email, role_id, status='ACTIVE'):
+    def create(first_name: str, last_name: str, email: str, role_id: int) -> Employee:
+        """Create a new employee with ACTIVE status"""
         try:
-            employee = Employee(
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                role_id=role_id,
-                status=status
-            )
+            if Employee.query.filter_by(email=email).first():
+                logger.warning(f"Email '{email}' already exists")
+                raise ValueError("Email already in use")
+
+            employee = Employee(first_name=first_name,
+                                last_name=last_name,
+                                email=email,
+                                role_id=role_id,
+                                status=EmployeeStatusEnum.ACTIVE)
+            
             db.session.add(employee)
             db.session.commit()
-            logger.info(f"Created employee with id '{employee.id}'")
+            logger.info(f"Created employee ID {employee.id}")
             return employee
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Error creating employee': {e}")
+            logger.exception(f"Error creating employee': {str(e)}")
             raise
 
     @staticmethod
-    def get_all():
-        employees = Employee.query.all()
-        logger.info(f"Fetched {len(employees)} employee/s")
-        return employees
-    
-    @staticmethod
-    def get_all_active():
-        employees = Employee.query.filter_by(is_archived=False).all()
-        logger.info(f"Fetched {len(employees)} active employee/s")
-        return employees
-
-    @staticmethod
-    def get_all_archived():
-        employees = Employee.query.filter_by(is_archived=True).all()
-        logger.info(f"Fetched {len(employees)} deleted employee/s")
-        return employees
-
-    @staticmethod
-    def get_by_id(emp_id):
+    def get_by_id(emp_id: int) -> Employee | None:
+        """Get single employee by ID"""
         employee = Employee.query.get(emp_id)
         if employee:
-            logger.info(f"Found employee id '{emp_id}'")
+            logger.info(f"Found employee ID {emp_id}")
         else:
-            logger.info(f"No employee found with id '{emp_id}'")
+            logger.warning(f"Employee ID {emp_id} not found")
         return employee
     
     @staticmethod
-    def update(emp_id, 
-               first_name=None, 
-               last_name=None, 
-               email=None, 
-               role_id=None,
-               status=None):
+    def get_all(status: EmployeeStatusEnum = None) -> list[Employee]:
+        """Get all employees, optionally filtered by status"""
+        query = Employee.query
+        if status:
+            query = query.filter_by(status=status)
+            logger.debug(f"Fetching employees with status {status}")
+        else:
+            logger.debug("Fetching all employees")
+        return query.all()
+    
+    @staticmethod
+    def update(emp_id: int, **kwargs) -> Employee | None:
+        """
+        Update employee attributes
+        
+        Args:
+        emp_id: ID of the employee to update
+        **kwargs: Attributes to update:
+            - first_name (str)
+            - last_name (str)
+            - email (str): (must be unique)
+            - role_id (int)
+            - status (EmployeeStatusEnum): (ACTIVE/INACTIVE/ARCHIVED)
+        """
+               
+        if not kwargs:
+            logger.warning(f"Update aborted: No fields provided for employee ID {emp_id}")
+            return None
         
         employee = Employee.query.get(emp_id)
+        
         if not employee:
-            logger.info(f"Update failed: No employee found with id '{emp_id}'")
+            logger.warning(f"Update failed: Employee ID {emp_id} not found")
             return None
         
-        if employee.is_archived:
-            logger.info(f"Attempted update on archived employee id '{emp_id}'")
+        if employee.status == EmployeeStatusEnum.ARCHIVED:
+            logger.warning(f"Update failed: Employee ID {emp_id} is archived")
             return None
         
-        if not any([first_name, last_name, email, role_id, status]):
-            logger.info(f"Tried updating employee id '{employee.role_id}' with no fields provided")
-            return None
-
-        if email and email != employee.email:
-            existing = Employee.query.filter_by(email=email).first()
-            if existing:
-                logger.info(f"Update failed: Email '{email}' already in use")
+        if 'email' in kwargs:
+            new_email = kwargs['email']
+            if new_email != employee.email and Employee.query.filter_by(email=new_email).first():
+                logger.warning(f"Email '{new_email}' already in use")
                 return None
 
-        old_first_name = employee.first_name
-        old_last_name = employee.last_name
-        old_email = employee.email
-        old_role = employee.role.name
-        old_status = employee.status
-
-        updates = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "email": email,
-            "role_id": role_id,
-            "status": status,
-        }
-
-        for attr, value in updates.items():
-            if value is not None:
-                setattr(employee, attr, value)
-
         try:
+            changes = False
+            for key, value in kwargs.items():
+                if hasattr(employee, key) and value is not None:
+                    old_value = getattr(employee, key)
+                    if old_value != value:
+                        setattr(employee, key, value)
+                        logger.info(f"Updating {key} from '{old_value}' to '{value}'")
+                        changes = True
+
+            if not changes:
+                logger.info(f"No changes detected for employee ID {emp_id}")
+                return employee
+                
             db.session.commit()
-            logger.info(f"Updated employee id '{emp_id}'")
-            if first_name:
-                logger.info(f"First name '{old_first_name} -> '{first_name}'")
-            if last_name:
-                logger.info(f"Last name '{old_last_name} -> '{last_name}'")
-            if email:
-                logger.info(f"Email '{old_email} -> '{email}'")
-            if role_id:
-                logger.info(f"Role '{old_role} -> '{employee.role.name}'")
-            if status:
-                logger.info(f"Status '{old_status}' -> '{status}'")
+            logger.info(f"Updated employee ID {emp_id}")
             return employee
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Error updating employee id '{emp_id }'")
+            logger.exception(f"Failed to update employee ID {emp_id}")
             raise
 
     @staticmethod
-    def archive(emp_id):
+    def archive(emp_id: int) -> bool:
+        """Archive an employee and set archived_at timestamp"""
         employee = Employee.query.get(emp_id)
         if not employee:
-            logger.info(f"Archive failed: No employee found with id '{emp_id}'")
+            logger.warning(f"Archive failed: Employee ID {emp_id} not found")
             return False
-        
-        if employee.is_archived:
-            logger.info(f"Archive failed: employee id '{emp_id}' is already marked archived")
+
+        if employee.status == EmployeeStatusEnum.ARCHIVED:
+            logger.warning(f"Employee ID {emp_id} already archived")
             return False
-            
+
         try:
-            employee.is_archived = True # do i change status as well?
+            employee.status = EmployeeStatusEnum.ARCHIVED
             employee.archived_at = datetime.now(timezone.utc)
             db.session.commit()
-            logger.info(f"Archived employee id '{emp_id}'")
+            logger.info(f"Archived employee ID {emp_id}")
             return True
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Error archiving employee id '{emp_id}'")
+            logger.exception(f"Error archiving employee ID {emp_id}")
             raise
 
     @staticmethod
-    def restore(emp_id):
+    def restore(emp_id: int) -> bool:
+        """Restore an archived employee"""
         employee = Employee.query.get(emp_id)
         if not employee:
-            logger.info(f"Restore failed: No employee found with id '{emp_id}'")
+            logger.warning(f"Restore failed: Employee ID {emp_id} not found")
             return False
-        
-        if not employee.is_archived:
-            logger.info(f"Restore failed: employee id '{emp_id}' is not marked deleted")
+
+        if employee.status != EmployeeStatusEnum.ARCHIVED:
+            logger.warning(f"Restore failed: Employee ID {emp_id} not archived")
             return False
-            
+
         try:
-            employee.is_archived = False
+            employee.status = EmployeeStatusEnum.ACTIVE # inactive would most likely be preferrable
             employee.archived_at = None
             db.session.commit()
-            logger.info(f"Restored employee id '{emp_id}'")
+            logger.info(f"Restored employee ID {emp_id}")
             return True
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Error restoring employee id '{emp_id}'")
+            logger.exception(f"Error restoring employee ID {emp_id}")
             raise

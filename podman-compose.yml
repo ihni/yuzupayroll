@@ -29,7 +29,7 @@ services:
       - "3306:3306"
     volumes:
       - ./storage/db:/var/lib/mysql
-      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
       - ./sql/seeder.sql:/docker-entrypoint-initdb.d/seeder.sql:ro
     networks:
       - payroll-net

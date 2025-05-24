@@ -1,4 +1,10 @@
 from app.extensions import db
+from sqlalchemy import func
+from enum import Enum as PyEnum
+
+class RoleStatusEnum(PyEnum):
+    ACTIVE = 'ACTIVE'
+    ARCHIVED = 'ARCHIVED'
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -7,23 +13,14 @@ class Role(db.Model):
     name = db.Column(db.String(45), unique=True, nullable=False)
     rate = db.Column(db.Numeric(10, 2), nullable=False)
 
-    created_at = db.Column(
-        db.DateTime(timezone=True),
-        server_default=db.func.now(),
-        nullable=False
-    )
-    updated_at = db.Column(
-        db.DateTime(timezone=True),
-        server_default=db.func.now(),
-        onupdate=db.func.now(),
-        nullable=False
-    )
-    is_archived = db.Column(
-        db.Boolean, 
-        server_default=db.text('0'), 
-        nullable=True
-    )
-    archived_at = db.Column(
-        db.DateTime(timezone=True), 
-        nullable=True
-    )
+    status = db.Column(db.Enum(RoleStatusEnum, name='role_status'),
+                       default=RoleStatusEnum.ACTIVE,
+                       nullable=False)
+    
+    archived_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
+    updated_at = db.Column(db.DateTime,nullable=False,
+                           server_default=func.now(),
+                           onupdate=func.now())
+    
+    employees = db.relationship('Employee', back_populates='role')
