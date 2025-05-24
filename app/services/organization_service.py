@@ -1,14 +1,7 @@
-from app.utils import get_logger
-from app.extensions import db
-from app.models import Organization
-
-logger = get_logger(__name__)
-
-
-from app.utils import get_logger
 from app.extensions import db
 from app.models import Organization
 from sqlalchemy.exc import SQLAlchemyError
+from app.utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -36,14 +29,14 @@ class OrganizationService:
         Update organization configuration
 
         Args:
-        **kwargs: Attributes to update:
-            - name (str)
-            - total_salary_budget (Decimal)
-            - budget_start_month (int 1-12)
-            - budget_start_day (int 1-31)
-            - budget_end_month (int 1-12) 
-            - budget_end_day (int 1-31)
-            - tax_rate (Decimal 0-1)
+            **kwargs: Attributes to update:
+                - name (str)
+                - total_salary_budget (Decimal)
+                - budget_start_month (int 1-12)
+                - budget_start_day (int 1-31)
+                - budget_end_month (int 1-12) 
+                - budget_end_day (int 1-31)
+                - tax_rate (Decimal 0-1)
         """
         
         if not kwargs:

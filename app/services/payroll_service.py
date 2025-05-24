@@ -1,104 +1,102 @@
-from app.utils import get_logger
 from app.extensions import db
-from app.models import Payroll
+from app.models import Payroll, PayrollStatusEnum
+from datetime import datetime, timezone
+from sqlalchemy.exc import SQLAlchemyError
+from app.utils import get_logger
 
 logger = get_logger(__name__)
 
 class PayrollService:
 
     @staticmethod
-    def create(emp_id, pay_period_start, pay_period_end, gross_pay, total_hours):
+    def create_payroll(employee_id: int, start_date: datetime, end_date: datetime) -> Payroll:
+        """Creates a payroll shell from a valid employee id"""
         try:
-            payroll = Payroll(
-                employee_id=emp_id,
-                pay_period_start=pay_period_start,
-                pay_period_end=pay_period_end,
-                gross_pay=gross_pay,
-                total_hours=total_hours
-            )
+            payroll = Payroll(employee_id=employee_id,
+                              start_date=start_date,
+                              end_date=end_date,
+                              gross_pay=0.00,
+                              net_pay=0.00,
+                              status=PayrollStatusEnum.DRAFT)
             db.session.add(payroll)
-            db.session.commit()
-            logger.info(f"Created payroll for employee id '{emp_id}'")
+            db.session.flush()
+            logger.info(f"Created payroll ID {payroll.id}")
             return payroll
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Failed to create payroll for employee id '{emp_id}'")
+            logger.exception(f"Payroll creation failed: {str(e)}")
+            raise
+
+    @staticmethod
+    def calculate_totals(payroll_id: int, worklogs_data: list[dict]) -> Payroll:
+        """Calculates payroll totals from provided worklogs data"""
+        payroll = Payroll.query.get(payroll_id)
+        if not payroll:
+            raise ValueError("Payroll not found")
+
+        try:
+            total_hours = sum(w['hours_worked'] for w in worklogs_data)
+            payroll.gross_pay = total_hours * payroll.employee.role.rate
+            payroll.net_pay = payroll.gross_pay * (1 - payroll.organization.tax_rate)
+            db.session.commit()
+            logger.info(f"Calculated totals for payroll ID {payroll_id}")
+            return payroll
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception(f"Payroll calculation failed: {str(e)}")
+            raise
+
+    @staticmethod
+    def finalize(payroll_id: int) -> bool:
+        """Finalizes payroll after all checks are done"""
+        payroll = Payroll.query.get(payroll_id)
+        if not payroll:
+            return False
+
+        try:
+            payroll.status = PayrollStatusEnum.FINALIZED
+            payroll.finalized_at = datetime.now(timezone.utc)
+            db.session.commit()
+            logger.info(f"Finalized payroll ID {payroll_id}")
+            return True
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.info(f"Failed to finalize payroll ID {payroll_id}")
             raise
     
     @staticmethod
-    def get_all():
-        payrolls = Payroll.query.all()
-        logger.info(f"Fetched {len(payrolls)} payroll/s")
-        return payrolls
+    def get_all(status: PayrollStatusEnum) -> list[Payroll]:
+        """Get all payrolls, optionally filtered by status"""
+        query = Payroll.query
+        if status:
+            query = query.filter_by(status=status)
+            logger.debug(f"Fetching payrolls with status {status}")
+        else:
+            logger.info("Fetching all payrolls")
+        return query.all()
     
     @staticmethod
-    def get_all_active():
-        payrolls = Payroll.query_not_deleted().all()
-        logger.info(f"Fetched {len(payrolls)} active payroll/s")
-        return payrolls
-    
-    @staticmethod
-    def get_all_deleted():
-        payrolls = Payroll.query_deleted().all()
-        logger.info(f"Fetched {len(payrolls)} deleted payroll/s")
-        return payrolls
-    
-    @staticmethod
-    def get_by_id(payroll_id):
+    def get_by_id(payroll_id: int) -> Payroll | None:
+        """Get employee by ID"""
         payroll = Payroll.query.get(payroll_id)
         if payroll:
-            logger.info(f"Found payroll id '{payroll_id}'")
+            logger.info(f"Found payroll ID {payroll_id}")
         else:
-            logger.info(f"No payroll found with id '{payroll_id}'")
+            logger.warning(f"Payroll ID {payroll_id} not found")
         return payroll
-    
+       
     @staticmethod
     # FOR UPDATE, SINCE THIS IS A SNAPSHOT, MAKE THIS ACTION SEVERE
     # TODO:
-    # should updating pay period be based from the worklogs or should it be
-    # manually edited?
-    # should gross pay and total hours be based from the worklogs or manually edited too?
-    def update(payroll_id, pay_period_start=None, hours_worked=None):
+    # should only update the 
+    # updating should only be allowed while in draft,
+    # updating should also recalculate gross pay and total hours
+    # should probaly also update the table in payroll worklogs but not in this service
+    # should update only the start or end date??(idk yet)
+    def update(payroll_id, **kwargs):
         pass
 
     @staticmethod
-    def delete(payroll_id):
-        payroll = Payroll.query.get(payroll_id)
-        if not work_log:
-            logger.info(f"Delete failed: No payroll found with id '{payroll_id}'")
-            return False
-
-        if payroll.is_deleted:
-            logger.info(f"Delete failed: payroll id '{payroll_id}' is already marked deleted")
-            return False
-
-        try:
-            payroll.soft_delete()
-            db.session.commit()
-            logger.info(f"Deleted payroll id '{payroll_id}'")
-            return True
-        except Exception as e:
-            db.session.rollback()
-            logger.exception(f"Error deleting payroll id '{payroll_id}'")
-            raise
-
-    @staticmethod
-    def restore(payroll_id):
-        payroll = Payroll.query.get(payroll_id)
-        if not payroll:
-            logger.info(f"Restore failed: No payroll found with id '{payroll_id}'")
-            return False
-        
-        if not payroll.is_deleted:
-            logger.info(f"Restore failed: payroll id '{payroll_id}' is not marked deleted")
-            return False
-            
-        try:
-            payroll.restore()
-            db.session.commit()
-            logger.info(f"Restored payroll id '{payroll_id}'")
-            return True
-        except Exception as e:
-            db.session.rollback()
-            logger.exception(f"Error restoring payroll id '{payroll_id}'")
-            raise
+    # should be a severe action
+    def archive(payroll_id):
+        pass

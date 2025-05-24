@@ -1,20 +1,20 @@
-from app.utils import get_logger
 from app.extensions import db
 from app.models import Employee, EmployeeStatusEnum
 from datetime import datetime, timezone
 from sqlalchemy.exc import SQLAlchemyError
+from app.utils import get_logger
 
 logger = get_logger(__name__)
 
 class EmployeeService:
 
     @staticmethod
-    def create(first_name: str, last_name: str, email: str, role_id: int) -> Employee:
-        """Create a new employee with ACTIVE status"""
+    def create(first_name: str, last_name: str, email: str, role_id: int) -> Employee | None:
+        """Creates a new employee with ACTIVE status if email doesn't exists"""
         try:
             if Employee.query.filter_by(email=email).first():
                 logger.warning(f"Email '{email}' already exists")
-                raise ValueError("Email already in use")
+                return None
 
             employee = Employee(first_name=first_name,
                                 last_name=last_name,
@@ -33,7 +33,7 @@ class EmployeeService:
 
     @staticmethod
     def get_by_id(emp_id: int) -> Employee | None:
-        """Get single employee by ID"""
+        """Get employee by ID"""
         employee = Employee.query.get(emp_id)
         if employee:
             logger.info(f"Found employee ID {emp_id}")
@@ -47,9 +47,9 @@ class EmployeeService:
         query = Employee.query
         if status:
             query = query.filter_by(status=status)
-            logger.debug(f"Fetching employees with status {status}")
+            logger.info(f"Fetching employees with status {status}")
         else:
-            logger.debug("Fetching all employees")
+            logger.info("Fetching all employees")
         return query.all()
     
     @staticmethod
@@ -58,13 +58,13 @@ class EmployeeService:
         Update employee attributes
         
         Args:
-        emp_id: ID of the employee to update
-        **kwargs: Attributes to update:
-            - first_name (str)
-            - last_name (str)
-            - email (str): (must be unique)
-            - role_id (int)
-            - status (EmployeeStatusEnum): (ACTIVE/INACTIVE/ARCHIVED)
+            emp_id: ID of the employee to update
+            **kwargs: Attributes to update:
+                - first_name (str)
+                - last_name (str)
+                - email (str): (must be unique)
+                - role_id (int)
+                - status (EmployeeStatusEnum): (ACTIVE/INACTIVE/ARCHIVED)
         """
                
         if not kwargs:

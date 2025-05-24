@@ -3,3 +3,4 @@ from .employee import Employee, EmployeeStatusEnum
 from .organization import Organization
 from .worklog import Worklog, WorklogStatusEnum
 from .payroll import Payroll, PayrollStatusEnum
+from .payroll_worklog import PayrollWorklog

@@ -1,142 +1,172 @@
-from app.utils import get_logger
 from app.extensions import db
-from app.models import WorkLog
+from datetime import datetime, timezone
+from app.models import Worklog, WorklogStatusEnum
+from sqlalchemy.exc import SQLAlchemyError
+from app.utils import get_logger
 
 logger = get_logger(__name__)
 
-class WorkLogService:
+class WorklogService:
 
     @staticmethod
-    def create(emp_id, date_worked, hours_worked):
+    def create_worklog_shell(emp_id: int, date: datetime, hours_worked: float):
+        """Creates a work log shell from a valid employee id"""
         try:
-            work_log = WorkLog(
-                employee_id=emp_id,
-                date_worked=date_worked,
-                hours_worked=hours_worked
-            )
-            db.session.add(work_log)
+            worklog = Worklog(employee_id=emp_id,
+                              date=date,
+                              hours_worked=hours_worked,
+                              status=WorklogStatusEnum.ACTIVE)
+            db.session.add(worklog)
             db.session.commit()
-            logger.info(f"Created work log for employee {emp_id} on {date_worked}")
-            return work_log
-        except Exception as e:
+            logger.info(f"Created work log for employee ID {emp_id} on {date}")
+            return worklog
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Failed to create work log for employee id '{emp_id}'")
-            raise
-    
-    @staticmethod
-    def get_all():
-        work_logs = WorkLog.query.all()
-        logger.info(f"Fetched {len(work_logs)} work logs")
-        return work_logs
-    
-    @staticmethod
-    def get_all_active():
-        work_logs = WorkLog.query_not_deleted().all()
-        logger.info(f"Fetched {len(work_logs)} active work log/s")
-        return work_logs
-    
-    @staticmethod
-    def get_all_deleted():
-        work_logs = WorkLog.query_deleted().all()
-        logger.info(f"Fetched {len(work_logs)} deleted work log/s")
-        return work_logs
-    
-    @staticmethod
-    def get_by_id(work_log_id):
-        work_log = WorkLog.query.get(work_log_id)
-        if work_log:
-            logger.info(f"Found work log id '{work_log_id}'")
-        else:
-            logger.info(f"No work log found with id '{work_log_id}'")
-        return work_log
-    
-    @staticmethod
-    def get_by_date_worked(date_worked):
-        work_logs = WorkLog.query.filter_by(date_worked=date_worked).all()
-        if work_logs:
-            logger.info(f"Found '{len(work_logs)}' work logs on date '{date_worked}'")
-        else: 
-            logger.info(f"No work logs found on date '{date_worked}'")
-        return work_logs
-    
-    @staticmethod
-    def update(work_log_id, date_worked=None, hours_worked=None):
-        work_log = WorkLog.query.get(work_log_id)
-        if not work_log:
-            logger.info(f"Update failed: No work log found with id '{work_log_id}'")
-            return None
-
-        if work_log.is_deleted:
-            logger.info(f"Attempted update on work log id '{work_log_id}'")
-            return None
-
-        if not date_worked and not hours_worked:
-            logger.info(f"Tried updating work log id '{work_log_id}' with empty fields")
-            return None
-
-        old_date = work_log.date_worked
-        old_hours = work_log.hours_worked
-
-        updates = {
-            "date_worked": date_worked,
-            "hours_worked": hours_worked,
-        }
-
-        for attr, value in updates.items():
-            if value is not None:
-                setattr(work_log, attr, value)
-
-        try:
-            db.session.commit()
-            logger.info(f"Updated work log id '{work_log_id}'")
-            if date_worked:
-                logger.info(f"Date '{old_date} -> '{date_worked}'")
-            if hours_worked:
-                logger.info(f"Hours '{old_hours} -> '{hours_worked}'")
-            return work_log
-        except Exception as e:
-            db.session.rollback()
-            logger.exception(f"Error updating work log id '{work_log_id}'")
+            logger.exception(f"Failed to create work log for employee ID {emp_id}: {str(e)}")
             raise
 
     @staticmethod
-    def delete(work_log_id):
-        work_log = WorkLog.query.get(work_log_id)
-        if not work_log:
-            logger.info(f"Delete failed: No work log found with id '{work_log_id}'")
-            return False
+    def get_eligible_for_payroll(emp_id: int, start: datetime, end: datetime) -> list[dict]:
+        """Returns serialized worklog data for payroll processing"""
+        worklogs = Worklog.query.filter_by(Worklog.employee_id == emp_id,
+                                           Worklog.date.between(start, end),
+                                           Worklog.status == WorklogStatusEnum.ACTIVE).all()
+        logger.info(f"Serialized ({len(worklogs)}) work logs for employee ID {emp_id} between {start} - {end}")
+        return [{'id': w.id,
+                 'hours_worked': w.hours_worked,
+                 'date': w.date} 
+                 for w in worklogs]
 
-        if work_log.is_deleted:
-            logger.info(f"Delete failed: work log id '{work_log_id}' is already marked deleted")
+    @staticmethod
+    def lock(worklog_id: int) -> bool:
+        """Locks a single work log"""
+        worklog = Worklog.query.get(worklog_id)
+        if not worklog:
+            logger.warning(f"Work log ID {worklog_id} not found")
             return False
 
         try:
-            work_log.soft_delete()
+            worklog.status = WorklogStatusEnum.LOCKED
+            worklog.locked_at = datetime.now(timezone.utc)
             db.session.commit()
-            logger.info(f"Deleted work log id '{work_log_id}'")
+            logger.info(f"Locked work log ID {worklog_id}")
             return True
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Error deleting work log id '{work_log_id}'")
+            logger.exception(f"Failed to lock work log ID {worklog_id}")
             raise
+        
+    @staticmethod
+    def bulk_lock(worklog_ids: list[int]) -> bool:
+        """Locks multiple worklogs in one transaction"""
+        try:
+            # use model instead of db session
+            db.session.query(Worklog).filter(
+                Worklog.id.in_(worklog_ids)
+            ).update({
+                'status': WorklogStatusEnum.LOCKED,
+                'locked_at': datetime.utcnow()
+            })
+            db.session.commit()
+            logger.info(f"Bulk locked ({len(worklog_ids)}) work logs")
+            return True
+        except SQLAlchemyError:
+            db.session.rollback()
+            logger.exception(f"Failed to bulk lock ({len(worklog_ids)}) work logs")
+            return False
+    
+    # TODO:
+    # ONLY UNLOCK WHEN NOT IN PAYROLL
+    @staticmethod
+    def unlock(worklog_id: int) -> bool:
+        pass
+
+    @staticmethod
+    def get_by_id(worklog_id) -> Worklog | None:
+        """Get work log by ID"""
+        worklog = Worklog.query.get(worklog_id)
+        if worklog:
+            logger.info(f"Found work log ID {worklog_id}")
+        else:
+            logger.warning(f"Work log ID {worklog_id} not found")
+        return worklog
+    
+    @staticmethod
+    def get_all(status: WorklogStatusEnum = None) -> list[Worklog]:
+        """Get all work logs, optionally filtered by status"""
+        query = Worklog.query
+        if status:
+            query = query.filter_by(status=status)
+            logger.info(f"Fetching work logs with status {status}")
+        else:
+            logger.info("Fetching all work logs")
+        return query.all()
+    
+    @staticmethod
+    def get_by_date(date: datetime) -> list[Worklog]:
+        worklogs = Worklog.query.filter_by(date=date).all()
+        if worklogs:
+            logger.info(f"Found ({len(worklogs)}) work logs on date '{date}'")
+        else: 
+            logger.info(f"No work logs found on date '{date}'")
+        return worklogs
+    
+
+    @staticmethod
+    def update(worklog_id: int, **kwargs) -> Worklog | None:
+        """
+        Update work log attributes ONLY WHEN STATUS IS IN DRAFT
+        
+        Args:
+            worklog_id: ID of the work log to update
+            **kwargs: Attributes to update:
+                - date (datetime)
+                - hours_worked (float)
+        """
+               
+        if not kwargs:
+            logger.warning(f"Update aborted: No fields provided for work log ID {worklog_id}")
+            return None
+        
+        worklog = Worklog.query.get(worklog_id)
+        
+        if not worklog:
+            logger.warning(f"Update failed: Work log ID {worklog_id} not found")
+            return None
+        
+        if worklog.status != WorklogStatusEnum.ACTIVE:
+            logger.warning(f"Update failed: Work log ID {worklog_id} is either locked or archived")
+            return None
+
+        try:
+            changes = False
+            for key, value in kwargs.items():
+                if hasattr(worklog, key) and value is not None:
+                    old_value = getattr(worklog, key)
+                    if old_value != value:
+                        setattr(worklog, key, value)
+                        logger.info(f"Updating {key} from '{old_value}' to '{value}'")
+                        changes = True
+
+            if not changes:
+                logger.info(f"No changes detected for work log ID {worklog_id}")
+                return worklog
+                
+            db.session.commit()
+            logger.info(f"Updated work log ID {worklog_id}")
+            return worklog
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception(f"Failed to update work log ID {worklog_id}")
+            raise
+    
+    @staticmethod
+    # TODO:
+    # ONLY ARCHIVE IF WORKLOG IS NOT LOCKED AND IS NOT IN PAYROLL
+    # OR IF LOGGED IN THE PAYROLL_WORKLOGS TABLE
+    def archive(worklog_id):
+        pass
 
     @staticmethod
     def restore(work_log_id):
-        work_log = WorkLog.query.get(work_log_id)
-        if not work_log:
-            logger.info(f"Restore failed: No work log found with id '{work_log_id}'")
-            return False
-        
-        if not work_log.is_deleted:
-            logger.info(f"Restore failed: work log id '{work_log_id}' is not marked deleted")
-            return False
-            
-        try:
-            work_log.restore()
-            db.session.commit()
-            logger.info(f"Restored work log id '{work_log_id}'")
-            return True
-        except Exception as e:
-            db.session.rollback()
-            logger.exception(f"Error restoring work log id '{work_log_id}'")
-            raise
+        pass
