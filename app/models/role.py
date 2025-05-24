@@ -6,6 +6,9 @@ class RoleStatusEnum(PyEnum):
     ACTIVE = 'ACTIVE'
     ARCHIVED = 'ARCHIVED'
 
+    def __str__(self):
+        return self.value
+
 class Role(db.Model):
     __tablename__ = 'roles'
     

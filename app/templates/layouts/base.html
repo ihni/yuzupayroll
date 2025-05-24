@@ -2,8 +2,26 @@
 <html>
 <head>
     <title>{% block title %}Payroll App{% endblock %}</title>
+    <style>
+        .flash-messages { margin: 10px 0; padding: 10px; }
+        .success { background-color: #dff0d8; color: #3c763d; }
+        .error { background-color: #f2dede; color: #a94442; }
+        .warning { background-color: #fcf8e3; color: #8a6d3b; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; border: 1px solid #ddd; }
+        form { margin: 20px 0; }
+    </style>
 </head>
 <body>
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
     {% include "components/navbar.html" %}
 
     <hr>

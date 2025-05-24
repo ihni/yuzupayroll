@@ -17,30 +17,30 @@ def index():
 @roles_bp.route("/create", methods=["POST"])
 def create_role():
     name = request.form.get("name")
-    hourly_rate = request.form.get("hourly_rate")
-    RoleService.create(name, hourly_rate)
+    rate = request.form.get("rate")
+    RoleService.create(name, rate)
     return redirect(url_for("roles.index"))
 
 @roles_bp.route("/update/<int:role_id>", methods=["POST"])
 def update_role(role_id):
     name = request.form.get("name")
-    hourly_rate = request.form.get("hourly_rate")
+    rate = request.form.get("rate")
 
     name = name if name else None
     
-    if hourly_rate:
-        if 0.00 < float(hourly_rate) < 99999999.99:
-            hourly_rate = float(hourly_rate)
+    if rate:
+        if 0.00 < float(rate) < 99999999.99:
+            rate = float(rate)
         else: 
-            hourly_rate = None
+            rate = None
     else:
-        hourly_rate = None
+        rate = None
     
 
     RoleService.update(
         role_id=role_id,
         name=name,
-        hourly_rate=hourly_rate
+        rate=rate
     )
     return redirect(url_for("roles.index"))
 

@@ -7,6 +7,9 @@ class PayrollStatusEnum(PyEnum):
     FINALIZED = 'FINALIZED'
     ARCHIVED = 'ARCHIVED'
 
+    def __str__(self):
+        return self.value
+
 class Payroll(db.Model):
     __tablename__ = "payrolls"
 

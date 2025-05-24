@@ -7,6 +7,9 @@ class EmployeeStatusEnum(PyEnum):
     INACTIVE = 'INACTIVE'
     ARCHIVED = 'ARCHIVED'
 
+    def __str__(self):
+        return self.value
+
 class Employee(db.Model):
     __tablename__ = 'employees'
 

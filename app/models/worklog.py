@@ -7,6 +7,9 @@ class WorklogStatusEnum(PyEnum):
     LOCKED = 'LOCKED'
     ARCHIVED = 'ARCHIVED'
 
+    def __str__(self):
+        return self.value
+    
 class Worklog(db.Model):
     __tablename__ = "worklogs"
 

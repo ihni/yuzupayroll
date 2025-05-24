@@ -65,7 +65,7 @@ class PayrollService:
             raise
     
     @staticmethod
-    def get_all(status: PayrollStatusEnum) -> list[Payroll]:
+    def get_all(status: PayrollStatusEnum = None) -> list[Payroll]:
         """Get all payrolls, optionally filtered by status"""
         query = Payroll.query
         if status:

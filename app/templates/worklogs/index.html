@@ -1,0 +1,67 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Worklogs{% endblock %}
+
+{% block content %}
+<h2>Worklogs</h2>
+
+<div class="filters">
+    <strong>Filter:</strong>
+    <a href="{{ url_for('worklogs.index') }}">All</a> |
+    {% for status in ['ACTIVE', 'LOCKED'] %}
+        <a href="{{ url_for('worklogs.index', status=status) }}">{{ status }}</a> |
+    {% endfor %}
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Hours</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for worklog in worklogs %}
+        <tr>
+            <td>{{ worklog.id }}</td>
+            <td>{{ worklog.employee.first_name }} {{ worklog.employee.last_name }}</td>
+            <td>{{ worklog.date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ worklog.hours_worked }}</td>
+            <td>{{ worklog.status.value }}</td>
+            <td>
+                {% if worklog.status.name == 'ACTIVE' %}
+                <form method="POST" action="{{ url_for('worklogs.lock', worklog_id=worklog.id) }}" style="display: inline;">
+                    <button type="submit">Lock</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<form method="POST" action="{{ url_for('worklogs.bulk_lock') }}">
+    <input type="hidden" name="worklog_ids" id="selected_worklogs">
+    <button type="submit" id="bulk_lock_btn" disabled>Lock Selected</button>
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const bulkLockBtn = document.getElementById('bulk_lock_btn');
+        
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                                    .map(el => el.value);
+                document.getElementById('selected_worklogs').value = selected.join(',');
+                bulkLockBtn.disabled = selected.length === 0;
+            });
+        });
+    });
+</script>
+{% endblock %}

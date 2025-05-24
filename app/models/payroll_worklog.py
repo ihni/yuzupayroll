@@ -19,5 +19,5 @@ class PayrollWorklog(db.Model):
     snapshot_locked = db.Column(db.Boolean, nullable=False, server_default='0')
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
-    worklog = db.relationship('Worklog', backref='payroll_worklogs')
-    payroll = db.relationship('Payroll', backref='payroll_worklogs')
+    worklog = db.relationship('Worklog', back_populates='payroll_worklogs')
+    payroll = db.relationship('Payroll', back_populates='payroll_worklogs')
