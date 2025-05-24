@@ -1,0 +1,23 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Create Role{% endblock %}
+
+{% block content %}
+<h2>Create New Role</h2>
+
+<form method="POST" action="{{ url_for('roles.create') }}">
+    <div>
+        <label for="name">Role Name:</label>
+        <input type="text" id="name" name="name" required>
+    </div>
+    
+    <div>
+        <label for="rate">Hourly Rate:</label>
+        <input type="number" id="rate" name="rate" step="0.01" min="0" required>
+    </div>
+    
+    <button type="submit">Create Role</button>
+</form>
+
+<a href="{{ url_for('roles.index') }}">Back to List</a>
+{% endblock %}

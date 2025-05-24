@@ -1,0 +1,34 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ employee.first_name }} {{ employee.last_name }}{% endblock %}
+
+{% block content %}
+<h2>Employee Details</h2>
+
+<div class="employee-info">
+    <p><strong>ID:</strong> {{ employee.id }}</p>
+    <p><strong>Name:</strong> {{ employee.first_name }} {{ employee.last_name }}</p>
+    <p><strong>Email:</strong> {{ employee.email }}</p>
+    <p><strong>Role:</strong> {{ employee.role.name if employee.role else 'None' }}</p>
+    <p><strong>Status:</strong> {{ employee.status.value }}</p>
+    {% if employee.status.name == 'ARCHIVED' %}
+        <p><strong>Archived At:</strong> {{ employee.archived_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    {% endif %}
+</div>
+
+<div class="actions">
+    <a href="{{ url_for('employees.edit', emp_id=employee.id) }}" class="button">Edit</a>
+    
+    {% if employee.status.name != 'ARCHIVED' %}
+    <form method="POST" action="{{ url_for('employees.archive', emp_id=employee.id) }}" style="display: inline;">
+        <button type="submit">Archive</button>
+    </form>
+    {% else %}
+    <form method="POST" action="{{ url_for('employees.restore', emp_id=employee.id) }}" style="display: inline;">
+        <button type="submit">Restore</button>
+    </form>
+    {% endif %}
+</div>
+
+<a href="{{ url_for('employees.index') }}">Back to List</a>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Edit {{ role.name }}{% endblock %}
+
+{% block content %}
+<h2>Edit Role</h2>
+
+<form method="POST" action="{{ url_for('roles.edit', role_id=role.id) }}">
+    <div>
+        <label for="name">Role Name:</label>
+        <input type="text" id="name" name="name" value="{{ role.name }}" required>
+    </div>
+    
+    <div>
+        <label for="rate">Hourly Rate:</label>
+        <input type="number" id="rate" name="rate" step="0.01" min="0" 
+               value="{{ "%.2f"|format(role.rate) }}" required>
+    </div>
+    
+    <div>
+        <label for="status">Status:</label>
+        <select id="status" name="status" required>
+            {% for status in statuses %}
+            <option value="{{ status.name }}" {% if status == role.status %}selected{% endif %}>
+                {{ status.value }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <button type="submit">Update Role</button>
+</form>
+
+<a href="{{ url_for('roles.view', role_id=role.id) }}">Cancel</a>
+{% endblock %}

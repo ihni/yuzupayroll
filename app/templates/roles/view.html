@@ -1,0 +1,61 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ role.name }}{% endblock %}
+
+{% block content %}
+<h2>Role Details</h2>
+
+<div class="role-info">
+    <p><strong>ID:</strong> {{ role.id }}</p>
+    <p><strong>Name:</strong> {{ role.name }}</p>
+    <p><strong>Hourly Rate:</strong> ${{ "%.2f"|format(role.rate) }}</p>
+    <p><strong>Status:</strong> {{ role.status.value }}</p>
+    <p><strong>Assigned Employees:</strong> {{ role.employees|length }}</p>
+    {% if role.status.name == 'ARCHIVED' %}
+        <p><strong>Archived At:</strong> {{ role.archived_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    {% endif %}
+</div>
+
+<div class="actions">
+    {% if role.status.name != 'ARCHIVED' %}
+    <a href="{{ url_for('roles.edit', role_id=role.id) }}" class="button">Edit</a>
+    
+    {% if role.employees|length == 0 %}
+    <form method="POST" action="{{ url_for('roles.archive', role_id=role.id) }}" style="display: inline;">
+        <button type="submit">Archive</button>
+    </form>
+    {% endif %}
+    
+    {% else %}
+    <form method="POST" action="{{ url_for('roles.restore', role_id=role.id) }}" style="display: inline;">
+        <button type="submit">Restore</button>
+    </form>
+    {% endif %}
+</div>
+
+<h3>Assigned Employees</h3>
+{% if role.employees %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for employee in role.employees %}
+        <tr>
+            <td>{{ employee.id }}</td>
+            <td>{{ employee.first_name }} {{ employee.last_name }}</td>
+            <td>{{ employee.status.value }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No employees assigned to this role</p>
+{% endif %}
+
+<a href="{{ url_for('roles.index') }}">Back to List</a>
+{% endblock %}
