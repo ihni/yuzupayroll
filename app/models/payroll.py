@@ -1,5 +1,5 @@
-from sqlalchemy import func
 from app.extensions import db
+from sqlalchemy import func
 
 class Payroll(db.Model):
     __tablename__ = "payrolls"
@@ -13,7 +13,7 @@ class Payroll(db.Model):
     status = db.Column(
         db.Enum('DRAFT', 'FINALIZED', 'ARCHIVED', name='payroll_status'),
         nullable=False,
-        server_default='DRAFT'
+        server_default=db.text("'DRAFT'")
     )
 
     created_at = db.Column(

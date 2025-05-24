@@ -19,11 +19,11 @@ class Employee(db.Model):
     status = db.Column(
         db.Enum('ACTIVE', 'INACTIVE', 'TERMINATED', name='employee_status'),
         nullable=False,
-        default='ACTIVE'
+        server_default=db.text("'ACTIVE'")
     )
 
     terminated_at = db.Column(db.DateTime, nullable=True)
-    is_archived = db.Column(db.Boolean, nullable=False, default=False)
+    is_archived = db.Column(db.Boolean, nullable=False, server_default=db.text('0'))
     archived_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(

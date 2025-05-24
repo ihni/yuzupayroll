@@ -9,9 +9,9 @@ class Worklog(db.Model):
     hours_worked = db.Column(db.Numeric(4, 2), nullable=False)
 
     status = db.Column(
-        db.Enum("ACTIVE", "LOCKED", "ARCHIVED", name="worklog_status"),
+        db.Enum('ACTIVE', 'LOCKED', 'ARCHIVED', name="worklog_status"),
         nullable=False,
-        server_default="ACTIVE"
+        server_default=db.text("'ACTIVE'")
     )
 
     created_at = db.Column(
