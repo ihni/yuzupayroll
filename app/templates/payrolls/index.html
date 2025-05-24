@@ -1,0 +1,46 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Payrolls{% endblock %}
+
+{% block content %}
+<h2>Payrolls</h2>
+
+<div class="filters">
+    <strong>Filter:</strong>
+    <a href="{{ url_for('payrolls.index') }}">All</a> |
+    {% for status in ['DRAFT', 'FINALIZED'] %}
+        <a href="{{ url_for('payrolls.index', status=status) }}">{{ status }}</a> |
+    {% endfor %}
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Employee</th>
+            <th>Period</th>
+            <th>Status</th>
+            <th>Hours</th>
+            <th>Gross Pay</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for payroll in payrolls %}
+        <tr>
+            <td>{{ payroll.id }}</td>
+            <td>{{ payroll.employee.first_name }} {{ payroll.employee.last_name }}</td>
+            <td>{{ payroll.start_date.strftime('%Y-%m-%d') }} to {{ payroll.end_date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ payroll.status.value }}</td>
+            <td>{{ payroll.total_hours|default(0, true) }}</td>
+            <td>${{ payroll.gross_pay|default(0, true) }}</td>
+            <td>
+                <a href="{{ url_for('payrolls.view', payroll_id=payroll.id) }}">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('payrolls.create') }}" class="button">Create New Payroll</a>
+{% endblock %}

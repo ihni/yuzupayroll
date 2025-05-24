@@ -36,3 +36,4 @@ This will list available targets like up, down, etc.
 > - macOS (ARM)
 >
 > ❗ Other environments (e.g., native Linux distros, Windows without WSL) are untested and may require additional configuration.
+> [view it here](docs/debugging_wsl_podman.md)

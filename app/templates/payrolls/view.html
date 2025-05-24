@@ -1,0 +1,62 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Payroll #{{ payroll.id }}{% endblock %}
+
+{% block content %}
+<h2>Payroll Details</h2>
+
+<div class="payroll-info">
+    <p><strong>Employee:</strong> {{ payroll.employee.first_name }} {{ payroll.employee.last_name }}</p>
+    <p><strong>Period:</strong> {{ payroll.start_date.strftime('%Y-%m-%d') }} to {{ payroll.end_date.strftime('%Y-%m-%d') }}</p>
+    <p><strong>Status:</strong> {{ payroll.status.value }}</p>
+    <p><strong>Total Hours:</strong> {{ payroll.total_hours|default('Not calculated', true) }}</p>
+    <p><strong>Gross Pay:</strong> ${{ payroll.gross_pay|default('Not calculated', true) }}</p>
+    <p><strong>Net Pay:</strong> ${{ payroll.net_pay|default('Not calculated', true) }}</p>
+</div>
+
+<div class="actions">
+    {% if payroll.status.name == 'DRAFT' %}
+        <form method="POST" action="{{ url_for('payrolls.calculate', payroll_id=payroll.id) }}" style="display: inline;">
+            <button type="submit">Calculate Totals</button>
+        </form>
+        
+        <a href="{{ url_for('worklogs.eligible_for_payroll', 
+                          employee_id=payroll.employee_id,
+                          start_date=payroll.start_date.strftime('%Y-%m-%d'),
+                          end_date=payroll.end_date.strftime('%Y-%m-%d'),
+                          payroll_id=payroll.id) }}">
+            Add Worklogs
+        </a>
+        
+        <form method="POST" action="{{ url_for('payrolls.finalize', payroll_id=payroll.id) }}" style="display: inline;">
+            <button type="submit">Finalize Payroll</button>
+        </form>
+    {% endif %}
+</div>
+
+<h3>Associated Worklogs</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Hours</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for worklog in payroll.payroll_worklogs %}
+        <tr>
+            <td>{{ worklog.worklog.date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ worklog.hours_recorded }}</td>
+            <td>{{ worklog.worklog.status.value }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="3">No worklogs added yet</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('payrolls.index') }}">Back to List</a>
+{% endblock %}

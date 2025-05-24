@@ -4,9 +4,54 @@
 
 {% block content %}
 <h2>Employees</h2>
-<ul>
-    {% for employee in employees %}
-        <li>{{ employee.first_name }}  {{ employee.last_name }} - {{ employee.email }} - {{employee.role.name}}</li>
+
+<div class="filters">
+    <strong>Filter:</strong>
+    <a href="{{ url_for('employees.index') }}">All</a> |
+    {% for status in ['ACTIVE', 'INACTIVE', 'ARCHIVED'] %}
+        <a href="{{ url_for('employees.index', status=status) }}">{{ status }}</a> |
     {% endfor %}
-</ul>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for employee in employees %}
+        <tr>
+            <td>{{ employee.id }}</td>
+            <td>{{ employee.first_name }} {{ employee.last_name }}</td>
+            <td>{{ employee.email }}</td>
+            <td>{{ employee.role.name if employee.role else 'None' }}</td>
+            <td>{{ employee.status.value }}</td>
+            <td>
+                <a href="{{ url_for('employees.view', emp_id=employee.id) }}">View</a>
+                {% if employee.status.name != 'ARCHIVED' %}
+                | <a href="{{ url_for('employees.edit', emp_id=employee.id) }}">Edit</a>
+                {% endif %}
+                
+                {% if employee.status.name != 'ARCHIVED' %}
+                <form method="POST" action="{{ url_for('employees.archive', emp_id=employee.id) }}" style="display: inline;">
+                    <button type="submit">Archive</button>
+                </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('employees.restore', emp_id=employee.id) }}" style="display: inline;">
+                    <button type="submit">Restore</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('employees.create') }}" class="button">Create New Employee</a>
 {% endblock %}

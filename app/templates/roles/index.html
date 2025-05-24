@@ -5,30 +5,53 @@
 {% block content %}
 <h2>Roles</h2>
 
-<form method="POST" action="{{ url_for('roles.create_role') }}">
-    <label for="name">Role Name:</label>
-    <input type="text" id="name" name="name" required>
-
-    <label for="hourly_rate">Hourly Rate:</label>
-    <input type="number" step="0.01" id="hourly_rate" name="hourly_rate" required>
-
-    <button type="submit">Create</button>
-</form>
-
-<h2>All Roles</h2>
-<ul>
-    {% for role in roles %}
-        <li>
-            <strong>{{ role.name }}</strong> - ${{ role.hourly_rate }} / hr
-            <form action="{{ url_for('roles.update_role', role_id=role.id) }}" method="post" style="display:inline;">
-                <input type="text" name="name" placeholder="New name">
-                <input type="number" step="0.01" name="hourly_rate" placeholder="New rate">
-                <button type="submit">Update</button>
-            </form>
-            <form action="{{ url_for('roles.delete_role', role_id=role.id) }}" method="post" style="display:inline;">
-                <button type="submit">Delete</button>
-            </form>
-        </li>
+<div class="filters">
+    <strong>Filter:</strong>
+    <a href="{{ url_for('roles.index') }}">All</a> |
+    {% for status in ['ACTIVE', 'ARCHIVED'] %}
+        <a href="{{ url_for('roles.index', status=status) }}">{{ status }}</a> |
     {% endfor %}
-</ul>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Hourly Rate</th>
+            <th>Status</th>
+            <th>Employees</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for role in roles %}
+        <tr>
+            <td>{{ role.id }}</td>
+            <td>{{ role.name }}</td>
+            <td>${{ "%.2f"|format(role.rate) }}</td>
+            <td>{{ role.status.value }}</td>
+            <td>{{ role.employees|length }}</td>
+            <td>
+                <a href="{{ url_for('roles.view', role_id=role.id) }}">View</a>
+                {% if role.status.name != 'ARCHIVED' %}
+                | <a href="{{ url_for('roles.edit', role_id=role.id) }}">Edit</a>
+                {% endif %}
+                
+                {% if role.status.name != 'ARCHIVED' and role.employees|length == 0 %}
+                <form method="POST" action="{{ url_for('roles.archive', role_id=role.id) }}" style="display: inline;">
+                    <button type="submit">Archive</button>
+                </form>
+                {% elif role.status.name == 'ARCHIVED' %}
+                <form method="POST" action="{{ url_for('roles.restore', role_id=role.id) }}" style="display: inline;">
+                    <button type="submit">Restore</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('roles.create') }}" class="button">Create New Role</a>
 {% endblock %}

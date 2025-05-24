@@ -11,6 +11,7 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- -----------------------------------------------------
 -- Schema payroll_db
 -- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `payroll_db` DEFAULT CHARACTER SET utf8 ;
 USE `payroll_db` ;
 
 -- -----------------------------------------------------
@@ -19,9 +20,11 @@ USE `payroll_db` ;
 CREATE TABLE IF NOT EXISTS `payroll_db`.`roles` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(45) NOT NULL,
-  `hourly_rate` DECIMAL(10,2) NOT NULL,
+  `rate` DECIMAL(10,2) NOT NULL,
+  `status` ENUM('ACTIVE', 'ARCHIVED') NULL DEFAULT 'ACTIVE',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `archived_at` DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `name_UNIQUE` (`name` ASC))
 ENGINE = InnoDB;
@@ -35,9 +38,11 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`employees` (
   `first_name` VARCHAR(45) NOT NULL,
   `last_name` VARCHAR(45) NOT NULL,
   `role_id` INT NOT NULL,
-  `email` VARCHAR(45) NOT NULL,
+  `status` ENUM('ACTIVE', 'INACTIVE', 'ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
+  `email` VARCHAR(100) NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `archived_at` DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   INDEX `role_id_idx` (`role_id` ASC),
   UNIQUE INDEX `email_UNIQUE` (`email` ASC),
@@ -50,18 +55,21 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `payroll_db`.`work_logs`
+-- Table `payroll_db`.`worklogs`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `payroll_db`.`work_logs` (
+CREATE TABLE IF NOT EXISTS `payroll_db`.`worklogs` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `date_worked` DATETIME NOT NULL,
-  `hours_worked` DECIMAL(4,2) NOT NULL,
   `employee_id` INT NOT NULL,
+  `date` DATETIME NOT NULL,
+  `hours_worked` DECIMAL(4,2) UNSIGNED NOT NULL,
+  `status` ENUM('ACTIVE', 'LOCKED', 'ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `archived_at` DATETIME NULL DEFAULT NULL,
+  `locked_at` DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   INDEX `employee_id_idx` (`employee_id` ASC),
-  CONSTRAINT `fk_work_logs_employee_id`
+  CONSTRAINT `fk_worklogs_employee_id`
     FOREIGN KEY (`employee_id`)
     REFERENCES `payroll_db`.`employees` (`id`)
     ON DELETE NO ACTION
@@ -70,17 +78,20 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `payroll_db`.`payroll`
+-- Table `payroll_db`.`payrolls`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `payroll_db`.`payroll` (
+CREATE TABLE IF NOT EXISTS `payroll_db`.`payrolls` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `pay_period_start` DATETIME NOT NULL,
-  `pay_period_end` DATETIME NOT NULL,
-  `gross_pay` DECIMAL(10,2) NOT NULL,
-  `total_hours` DECIMAL(5,2) NOT NULL,
   `employee_id` INT NOT NULL,
+  `start_date` DATETIME NOT NULL,
+  `end_date` DATETIME NOT NULL,
+  `gross_pay` DECIMAL(10,2) NOT NULL,
+  `net_pay` DECIMAL(10,2) NOT NULL,
+  `status` ENUM('DRAFT', 'FINALIZED', 'ARCHIVED') NOT NULL DEFAULT 'DRAFT',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `archived_at` DATETIME NULL DEFAULT NULL,
+  `finalized_at` DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   INDEX `employee_id_idx` (`employee_id` ASC),
   CONSTRAINT `fk_payroll_employee_id`
@@ -104,7 +115,34 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`organization` (
   `budget_end_day` INT NOT NULL DEFAULT 31,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `tax_rate` DECIMAL(5,4) NOT NULL DEFAULT 0.0000,
   PRIMARY KEY (`id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `payroll_db`.`payroll_worklogs`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payroll_db`.`payroll_worklogs` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `payroll_id` INT NOT NULL,
+  `worklog_id` INT NOT NULL,
+  `hours_recorded` DECIMAL(5,2) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT current_timestamp,
+  `snapshot_locked` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  INDEX `fk_payroll_worklogs_payroll_id_idx` (`payroll_id` ASC),
+  INDEX `fk_payroll_worklogs_worklog_id_idx` (`worklog_id` ASC),
+  CONSTRAINT `fk_payroll_worklogs_payroll_id`
+    FOREIGN KEY (`payroll_id`)
+    REFERENCES `payroll_db`.`payrolls` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_payroll_worklogs_worklog_id`
+    FOREIGN KEY (`worklog_id`)
+    REFERENCES `payroll_db`.`worklogs` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 

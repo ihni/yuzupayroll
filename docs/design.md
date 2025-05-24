@@ -8,7 +8,7 @@ This is a payroll management system for handling employee work logs, payroll gen
 - **Role**: Contains salary rate info.
 - **WorkLog**: Time-in/out per employee, feeds into payroll.
 - **Payroll**: Generated summaries per employee.
-- **Organization**: Config table for budget cycle.
+- **Organization**: Config table for budget.
 
 ## Architecture
 - Backend: Python (Flask)

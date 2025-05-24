@@ -1,0 +1,92 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Edit Organization Settings{% endblock %}
+
+{% block content %}
+<h2>Edit Organization Configuration</h2>
+
+{% if org %}
+<form method="POST" action="{{ url_for('organization.edit') }}">
+    <div class="form-section">
+        <h3>Basic Information</h3>
+        
+        <div class="form-group">
+            <label for="name">Organization Name:</label>
+            <input type="text" id="name" name="name" value="{{ org.name }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="tax_rate">Tax Rate (%):</label>
+            <input type="number" id="tax_rate" name="tax_rate" 
+                   step="0.01" min="0" max="100" 
+                   value="{{ "%.2f"|format(org.tax_rate * 100) }}" required>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Budget Settings</h3>
+        
+        <div class="form-group">
+            <label for="total_salary_budget">Total Salary Budget ($):</label>
+            <input type="number" id="total_salary_budget" name="total_salary_budget" 
+                   step="0.01" min="0" value="{{ "%.2f"|format(org.total_salary_budget) }}" required>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="budget_start_month">Budget Start Month:</label>
+                <select id="budget_start_month" name="budget_start_month" required>
+                    {% for month in range(1, 13) %}
+                    <option value="{{ month }}" {% if month == org.budget_start_month %}selected{% endif %}>
+                        {{ month }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="budget_start_day">Start Day:</label>
+                <select id="budget_start_day" name="budget_start_day" required>
+                    {% for day in range(1, 32) %}
+                    <option value="{{ day }}" {% if day == org.budget_start_day %}selected{% endif %}>
+                        {{ day }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="budget_end_month">Budget End Month:</label>
+                <select id="budget_end_month" name="budget_end_month" required>
+                    {% for month in range(1, 13) %}
+                    <option value="{{ month }}" {% if month == org.budget_end_month %}selected{% endif %}>
+                        {{ month }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="budget_end_day">End Day:</label>
+                <select id="budget_end_day" name="budget_end_day" required>
+                    {% for day in range(1, 32) %}
+                    <option value="{{ day }}" {% if day == org.budget_end_day %}selected{% endif %}>
+                        {{ day }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit">Save Changes</button>
+    <a href="{{ url_for('organization.view') }}" class="button cancel">Cancel</a>
+</form>
+{% else %}
+<div class="alert error">
+    Organization configuration not initialized
+</div>
+{% endif %}
+{% endblock %}

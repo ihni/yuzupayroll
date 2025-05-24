@@ -1,99 +1,153 @@
-from app.utils import get_logger
 from app.extensions import db
-from app.models import Role
+from app.models import Role, RoleStatusEnum
+from datetime import datetime, timezone
+from sqlalchemy.exc import SQLAlchemyError
+from app.utils import get_logger
 
 logger = get_logger(__name__)
 
 class RoleService:
 
     @staticmethod
-    def create(name, hourly_rate):
+    def create(name: str, rate: float) -> Role | None:
+        """Create a new role if name doesn't exist"""
         try:
             if Role.query.filter_by(name=name).first():
-                logger.warning(f"Cannot create role {name}: Duplicate found")
+                logger.warning(f"Role '{name}' already exists")
                 return None
-            role = Role(name=name, hourly_rate=hourly_rate)
+            
+            role = Role(name=name, rate=rate)
             db.session.add(role)
             db.session.commit()
-            logger.info(f"Created role with id '{role.id}'")
+            logger.info(f"Created role ID {role.id}")
             return role
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Error creating role '{name}': {e}")
+            logger.exception(f"Error creating role '{name}': {str(e)}")
             raise
     
     @staticmethod
-    def get_all():
-        roles = Role.query.all()
-        logger.info(f"Fetched {len(roles)} roles")
-        return roles
-    
-    @staticmethod
     def get_by_id(role_id):
-        role = Role.query.all()
+        """Get role by ID"""
+        role = Role.query.get(role_id)
         if role:
-            logger.info(f"Found role id '{role_id}'")
+            logger.debug(f"Found role ID {role_id}")
         else:
-            logger.warning(f"No role found with id '{role_id}'")
+            logger.warning(f"Role ID {role_id} not found")
         return role
     
     @staticmethod
     def get_by_name(name):
+        """Get role by exact name match"""
         role = Role.query.filter_by(name=name).first()
         if role:
-            logger.info(f"Found role name '{name}'")
-        else: 
-            logger.warning(f"No role found with name '{name}'")
+            logger.debug(f"Found role '{name}'")
+        else:
+            logger.debug(f"Role '{name}' not found")
         return role
     
-    # TODO:
-    # CHECK IF ROLE NAME EXISTS FIRST BEFORE UPDATING
     @staticmethod
-    def update(role_id, name=None, hourly_rate=None):
+    def get_all(status: RoleStatusEnum = None):
+        """Get all roles, optionally filtered by status"""
+        query = Role.query
+        if status:
+            query = query.filter_by(status=status)
+            logger.debug(f"Fetching roles with status {status}")
+        else:
+            logger.debug("Fetching all roles")
+        return query.all()
+    
+    @staticmethod
+    def update(role_id: int, **kwargs) -> Role | None:
+        """
+        Update role attributes
+        
+        Args:
+            role_id: ID of role to update
+            **kwargs: Fields to update:
+                - name (str): Must be unique
+                - rate (float): Hourly rate
+                - status (RoleStatusEnum): ACTIVE/ARCHIVED
+        """
+        if not kwargs:
+            logger.warning(f"Update aborted: No fields provided for role ID {role_id}")
+            return None
+
         role = Role.query.get(role_id)
         if not role:
+            logger.warning(f"Role ID {role_id} not found")
             return None
-        
-        old_name = role.name
-        old_rate = role.hourly_rate
 
-        if name:
-            role.name = name
-        if hourly_rate:
-            role.hourly_rate = hourly_rate
-
-        if not name and not hourly_rate:
-            logger.info("Tried updating role id {role_id} with empty fields")
-            return None
+        if 'name' in kwargs and kwargs['name'] != role.name:
+            if Role.query.filter_by(name=kwargs['name']).first():
+                logger.warning(f"Role name '{kwargs['name']}' already exists")
+                return None
 
         try:
+            changes = False
+            for key, value in kwargs.items():
+                if hasattr(role, key) and value is not None:
+                    old_value = getattr(role, key)
+                    if old_value != value:
+                        setattr(role, key, value)
+                        logger.info(f"Updated {key} from '{old_value}' to '{value}'")
+                        changes = True
+
+            if not changes:
+                logger.info(f"No changes for role ID {role_id}")
+                return role
+
             db.session.commit()
-            logger.info(f"Updated role id {role_id}")
-            if name:
-                logger.info(f"Updated old name '{old_name} -> '{name}'")
-            if hourly_rate:
-                logger.info(f"Updated old rate '${old_rate} -> '${hourly_rate}'")
+            logger.info(f"Updated role ID {role_id}")
             return role
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Error updating role id '{role_id}'")
+            logger.exception(f"Error updating role ID {role_id}: {str(e)}")
             raise
 
-    # TODO:
-    # ACCOUNT FOR FOREIGN KEY CONSTRAINT(IS EMPLOYEE USING THIS ROLE?)
     @staticmethod
-    def delete(role_id):
+    def archive(role_id: int) -> bool:
+        """Archive role if not assigned to employees"""
         role = Role.query.get(role_id)
         if not role:
-            logger.warning(f"Delete failed: No role found with id '{role_id}'")
+            logger.warning(f"Role ID {role_id} not found")
             return False
-            
+
+        if role.employees:
+            logger.warning(f"Cannot archive role ID {role_id} - "
+                           f"Assigned to {len(role.employees)} employees")
+            return False
+
         try:
-            db.session.delete(role)
+            role.status = RoleStatusEnum.ARCHIVED
+            role.archived_at = datetime.now(timezone.utc)
             db.session.commit()
-            logger.info(f"Deleted role id '{role_id}'")
+            logger.info(f"Archived role ID {role_id}")
             return True
-        except Exception as e:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Error deleting role id '{role_id}'")
+            logger.exception(f"Error archiving role ID {role_id}: {str(e)}")
+            raise
+
+    @staticmethod
+    def restore(role_id: int) -> bool:
+        """Restore an archived role"""
+        role = Role.query.get(role_id)
+        if not role:
+            logger.warning(f"Role ID {role_id} not found")
+            return False
+
+        if role.status != RoleStatusEnum.ARCHIVED:
+            logger.warning(f"Role ID {role_id} is not archived")
+            return False
+
+        try:
+            role.status = RoleStatusEnum.ACTIVE
+            role.archived_at = None
+            db.session.commit()
+            logger.info(f"Restored role ID {role_id}")
+            return True
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception(f"Error restoring role ID {role_id}: {str(e)}")
             raise
