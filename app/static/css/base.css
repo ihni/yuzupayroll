@@ -1,3 +1,11 @@
+.flash-messages { margin: 10px 0; padding: 10px; }
+.success { background-color: #dff0d8; color: #3c763d; }
+.error { background-color: #f2dede; color: #a94442; }
+.warning { background-color: #fcf8e3; color: #8a6d3b; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 8px; border: 1px solid #ddd; }
+form { margin: 20px 0; }
+
 /* Organization specific styles */
 .org-info .section {
     margin-bottom: 2rem;
