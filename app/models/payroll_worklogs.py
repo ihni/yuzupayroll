@@ -7,17 +7,17 @@ class PayrollWorklog(db.Model):
 
     payroll_id = db.Column(
         db.Integer,
-        db.ForeignKey("payroll.id"),
+        db.ForeignKey('payroll.id'),
         nullable=False
     )
     worklog_id = db.Column(
         db.Integer,
-        db.ForeignKey("worklogs.id"),
+        db.ForeignKey('worklogs.id'),
         nullable=False
     )
 
     hours_recorded = db.Column(db.Numeric(5, 2), nullable=False)
-    snapshot_locked = db.Column(db.Boolean, nullable=False, server_default=db.text("0"))
+    snapshot_locked = db.Column(db.Boolean, nullable=False, server_default=db.text('0'))
 
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -25,5 +25,5 @@ class PayrollWorklog(db.Model):
         server_default=db.func.now()
     )
 
-    payroll = db.relationship("Payroll", backref="payroll_worklogs")
-    worklog = db.relationship("Worklog", backref="payroll_worklogs")
+    worklog = db.relationship('Worklog', backref='payroll_worklogs')
+    payroll = db.relationship('Payroll', backref='payroll_worklogs')

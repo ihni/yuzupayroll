@@ -18,3 +18,12 @@ class Role(db.Model):
         onupdate=db.func.now(),
         nullable=False
     )
+    is_archived = db.Column(
+        db.Boolean, 
+        server_default=db.text('0'), 
+        nullable=True
+    )
+    archived_at = db.Column(
+        db.DateTime(timezone=True), 
+        nullable=True
+    )

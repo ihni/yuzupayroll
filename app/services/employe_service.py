@@ -8,13 +8,14 @@ logger = get_logger(__name__)
 class EmployeeService:
 
     @staticmethod
-    def create(first_name, last_name, email, role_id):
+    def create(first_name, last_name, email, role_id, status='ACTIVE'):
         try:
             employee = Employee(
                 first_name=first_name,
                 last_name=last_name,
                 email=email,
-                role_id=role_id
+                role_id=role_id,
+                status=status
             )
             db.session.add(employee)
             db.session.commit()
@@ -33,13 +34,13 @@ class EmployeeService:
     
     @staticmethod
     def get_all_active():
-        employees = Employee.query_not_deleted().all()
+        employees = Employee.query.filter_by(is_archived=False).all()
         logger.info(f"Fetched {len(employees)} active employee/s")
         return employees
 
     @staticmethod
-    def get_all_deleted():
-        employees = Employee.query_deleted().all()
+    def get_all_archived():
+        employees = Employee.query.filter_by(is_archived=True).all()
         logger.info(f"Fetched {len(employees)} deleted employee/s")
         return employees
 
@@ -50,21 +51,27 @@ class EmployeeService:
             logger.info(f"Found employee id '{emp_id}'")
         else:
             logger.info(f"No employee found with id '{emp_id}'")
-        return Employee.query.get(emp_id)
+        return employee
     
     @staticmethod
-    def update(emp_id, first_name=None, last_name=None, email=None, role_id=None):
+    def update(emp_id, 
+               first_name=None, 
+               last_name=None, 
+               email=None, 
+               role_id=None,
+               status=None):
+        
         employee = Employee.query.get(emp_id)
         if not employee:
             logger.info(f"Update failed: No employee found with id '{emp_id}'")
             return None
         
-        if employee.is_deleted:
-            logger.info(f"Attempted update on deleted employee id '{emp_id}'")
+        if employee.is_archived:
+            logger.info(f"Attempted update on archived employee id '{emp_id}'")
             return None
         
-        if not any([first_name, last_name, email, role_id]):
-            logger.info(f"Tried updating employee id '{employee.role_id}' with empty fields")
+        if not any([first_name, last_name, email, role_id, status]):
+            logger.info(f"Tried updating employee id '{employee.role_id}' with no fields provided")
             return None
 
         if email and email != employee.email:
@@ -77,12 +84,14 @@ class EmployeeService:
         old_last_name = employee.last_name
         old_email = employee.email
         old_role = employee.role.name
+        old_status = employee.status
 
         updates = {
             "first_name": first_name,
             "last_name": last_name,
             "email": email,
             "role_id": role_id,
+            "status": status,
         }
 
         for attr, value in updates.items():
@@ -100,6 +109,8 @@ class EmployeeService:
                 logger.info(f"Email '{old_email} -> '{email}'")
             if role_id:
                 logger.info(f"Role '{old_role} -> '{employee.role.name}'")
+            if status:
+                logger.info(f"Status '{old_status}' -> '{status}'")
             return employee
         except Exception as e:
             db.session.rollback()
@@ -107,24 +118,25 @@ class EmployeeService:
             raise
 
     @staticmethod
-    def delete(emp_id):
+    def archive(emp_id):
         employee = Employee.query.get(emp_id)
         if not employee:
-            logger.info(f"Delete failed: No employee found with id '{emp_id}'")
+            logger.info(f"Archive failed: No employee found with id '{emp_id}'")
             return False
         
-        if employee.is_deleted:
-            logger.info(f"Delete failed: employee id '{emp_id}' is already marked deleted")
+        if employee.is_archived:
+            logger.info(f"Archive failed: employee id '{emp_id}' is already marked archived")
             return False
             
         try:
-            employee.soft_delete()
+            employee.is_archived = True # do i change status as well?
+            employee.archived_at = datetime.now(timezone.utc)
             db.session.commit()
-            logger.info(f"Soft deleted employee id '{emp_id}'")
+            logger.info(f"Archived employee id '{emp_id}'")
             return True
         except Exception as e:
             db.session.rollback()
-            logger.exception(f"Error deleting employee id '{emp_id}'")
+            logger.exception(f"Error archiving employee id '{emp_id}'")
             raise
 
     @staticmethod
@@ -134,12 +146,13 @@ class EmployeeService:
             logger.info(f"Restore failed: No employee found with id '{emp_id}'")
             return False
         
-        if not employee.is_deleted:
+        if not employee.is_archived:
             logger.info(f"Restore failed: employee id '{emp_id}' is not marked deleted")
             return False
             
         try:
-            employee.restore()
+            employee.is_archived = False
+            employee.archived_at = None
             db.session.commit()
             logger.info(f"Restored employee id '{emp_id}'")
             return True
