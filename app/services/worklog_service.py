@@ -9,33 +9,33 @@ logger = get_logger(__name__)
 class WorklogService:
 
     @staticmethod
-    def create_worklog_shell(emp_id: int, date: datetime, hours_worked: float) -> Worklog:
+    def create_worklog_shell(employee_id: int, date: datetime, hours_worked: float) -> Worklog:
         """create a work log shell from a valid employee id"""
         try:
             worklog = Worklog(
-                employee_id=emp_id,
+                employee_id=employee_id,
                 date=date,
                 hours_worked=hours_worked,
                 status=WorklogStatusEnum.ACTIVE
             )
             db.session.add(worklog)
             db.session.commit()
-            logger.info(f"Created work log for employee ID {emp_id} on {date}")
+            logger.info(f"Created work log for employee ID {employee_id} on {date}")
             return worklog
         except SQLAlchemyError as e:
             db.session.rollback()
-            logger.exception(f"Failed to create work log for employee ID {emp_id}: {str(e)}")
+            logger.exception(f"Failed to create work log for employee ID {employee_id}: {str(e)}")
             raise
 
     @staticmethod
-    def get_eligible_for_payroll(emp_id: int, start: datetime, end: datetime) -> list[Worklog]:
-        """return serialized worklog data for payroll processing"""
-        worklogs = Worklog.query.filter_by(
-            Worklog.employee_id == emp_id,
+    def get_eligible_for_payroll(employee_id: int, start: datetime, end: datetime) -> list[Worklog]:
+        """fetches worklogs that fit the criteria and are active"""
+        worklogs = Worklog.query.filter(
+            Worklog.employee_id == employee_id,
             Worklog.date.between(start, end),
             Worklog.status == WorklogStatusEnum.ACTIVE
         ).all()
-        logger.info(f"Fetching {len(worklogs)} work logs for employee ID {emp_id} between {start} - {end}")
+        logger.info(f"Fetching {len(worklogs)} work logs for employee ID {employee_id} between {start} - {end}")
         return worklogs
     
     @staticmethod
@@ -61,31 +61,55 @@ class WorklogService:
     def bulk_lock(worklog_ids: list[int]) -> bool:
         """lock multiple worklogs in one transaction"""
         try:
-            # use model instead of db session
-            db.session.query(Worklog).filter(
-                Worklog.id.in_(worklog_ids)
-            ).update(
-                {
-                'status': WorklogStatusEnum.LOCKED,
-                'locked_at': datetime.now(timezone.utc)
-                }
+            now = datetime.now(timezone.utc)
+            updated_rows = (
+                db.session.query(Worklog)
+                .filter(Worklog.id.in_(worklog_ids))
+                .update(
+                    {
+                        'status': WorklogStatusEnum.LOCKED,
+                        'locked_at': now
+                    },
+                    synchronize_session='fetch'
+                )
             )
             db.session.commit()
-            logger.info(f"Bulk locked ({len(worklog_ids)}) work logs")
+            logger.info(f"Bulk locked ({updated_rows}) work logs")
             return True
         except SQLAlchemyError:
             db.session.rollback()
             logger.exception(f"Failed to bulk lock ({len(worklog_ids)}) work logs")
             return False
     
-    # TODO:
-    # ONLY UNLOCK WHEN NOT IN PAYROLL
     @staticmethod
     def unlock(worklog_id: int) -> bool:
-        pass
+        worklog = Worklog.query.get(worklog_id)
+        if not worklog:
+            logger.warning(f"Unlock failed: Worklog ID {worklog_id} not found")
+            return False
+        
+        from app.services import PayrollWorklogService
+        if PayrollWorklogService.is_worklog_in_finalized_payroll(worklog_id):
+            logger.warning(f"Unlock failed: Worklog ID {worklog_id} is part of a locked payroll")
+            return False
+        
+        if worklog.status != WorklogStatusEnum.LOCKED:
+            logger.warning(f"Unlock failed: Worklog ID {worklog_id} is not locked")
+            return False
+        
+        try:
+            worklog.status = WorklogStatusEnum.ACTIVE
+            worklog.locked_at = None
+            db.session.commit()
+            logger.info(f"Unlocked worklog ID {worklog_id}")
+            return True
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception(f"Failed to unlock worklog ID {worklog_id}: {str(e)}")
+            raise
 
     @staticmethod
-    def get_by_id(worklog_id) -> Worklog | None:
+    def get_by_id(worklog_id: int) -> Worklog | None:
         """get work log by ID"""
         worklog = Worklog.query.get(worklog_id)
         if worklog:
@@ -168,12 +192,48 @@ class WorklogService:
             raise
     
     @staticmethod
-    # TODO:
-    # ONLY ARCHIVE IF WORKLOG IS NOT LOCKED AND IS NOT IN PAYROLL
-    # OR IF LOGGED IN THE PAYROLL_WORKLOGS TABLE
-    def archive(worklog_id):
-        pass
+    def archive(worklog_id: int) -> bool:
+        worklog = Worklog.query.get(worklog_id)
+        if not worklog:
+            logger.warning(f"Worklog ID {worklog_id} not found")
+            return False
+        
+        from app.services.payroll_worklog_service import PayrollWorklogService
+        if PayrollWorklogService.is_worklog_in_any_payroll(worklog_id):
+            logger.warning(f"Cannot archive worklog ID {worklog_id} because it is in a payroll")
+            return False
+        if worklog.status == WorklogStatusEnum.LOCKED:
+            logger.warning(f"Cannot archive locked worklog ID {worklog_id}")
+            return False
+        
+        try:
+            worklog.status = WorklogStatusEnum.ARCHIVED
+            db.session.commit()
+            logger.info(f"Archived worklog ID {worklog_id}")
+            return True
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception(f"Failed to archive worklog ID {worklog_id}")
+            raise
+
 
     @staticmethod
-    def restore(work_log_id):
-        pass
+    def restore(worklog_id: int) -> bool:
+        worklog = Worklog.query.get(worklog_id)
+        if not worklog:
+            logger.warning(f"Restore failed: worklog ID {worklog_id} not found")
+            return False
+
+        if worklog.status != WorklogStatusEnum.ARCHIVED:
+            logger.warning(f"Restore aborted: worklog ID {worklog_id} is not archived")
+            return False
+
+        try:
+            worklog.status = WorklogStatusEnum.ACTIVE
+            db.session.commit()
+            logger.info(f"Restored worklog ID {worklog_id}")
+            return True
+        except SQLAlchemyError:
+            db.session.rollback()
+            logger.exception(f"Failed to restore worklog ID {worklog_id}")
+            return False

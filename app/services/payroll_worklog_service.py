@@ -1,5 +1,5 @@
 from app.extensions import db
-from app.models import PayrollWorklog, Worklog, WorklogStatusEnum
+from app.models import PayrollWorklog, Worklog, Payroll, PayrollStatusEnum, WorklogStatusEnum
 from sqlalchemy.exc import SQLAlchemyError # type: ignore
 from app.utils import get_logger
 
@@ -9,6 +9,22 @@ logger = get_logger(__name__)
 # ADD LOG STATEMENTS
 
 class PayrollWorklogService:
+
+    @staticmethod
+    def is_worklog_in_finalized_payroll(worklog_id: int) -> bool:
+        """returns true if the worklog is part of any non draft payroll"""
+        return PayrollWorklog.query.join(Payroll).filter(
+            PayrollWorklog.worklog_id == worklog_id,
+            Payroll.status == PayrollStatusEnum.FINALIZED
+        ).count() > 0
+    
+    @staticmethod
+    def is_worklog_in_any_payroll(worklog_id: int) -> bool:
+        """returns true if the worklog is part of any payroll"""
+        return PayrollWorklog.query.join(Payroll).filter(
+            PayrollWorklog.worklog_id == worklog_id,
+            Payroll.status == PayrollStatusEnum.FINALIZED
+        ).count() > 0
 
     @staticmethod
     def bulk_create_associations(payroll_id: int, worklog_ids: list[int]) -> bool:

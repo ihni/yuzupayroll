@@ -20,9 +20,9 @@
 - [ ] Complete the full functionality of service layers
     - [X] Employee
     - [X] Organization
-    - [X] Payroll
+    - [ ] Payroll
     - [ ] Payroll Worklog
-    - [ ] Role
+    - [X] Role
     - [ ] Worklog
 - [ ] Match up the routers with the service layer
 
