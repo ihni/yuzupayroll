@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask # type: ignore
 from app.extensions import db
 from app.config import Config
 
@@ -9,7 +9,7 @@ def create_app():
 
     db.init_app(app)
 
-    # import routeres here:
+    # import routers here:
     from app.routes import roles_bp
     from app.routes import home_bp
     from app.routes import employees_bp

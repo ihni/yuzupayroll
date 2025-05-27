@@ -1,5 +1,5 @@
 from app.extensions import db
-from sqlalchemy import func
+from sqlalchemy import func # type: ignore
 
 class Organization(db.Model):
     __tablename__ = 'organization'
@@ -15,8 +15,10 @@ class Organization(db.Model):
 
     tax_rate = db.Column(db.Numeric(5, 4), nullable=False, server_default='0.0000')
 
-    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
-    updated_at = db.Column(db.DateTime, 
-                           nullable=False, 
-                           server_default=func.now(), 
-                           onupdate=func.now())
+    created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=func.now(), 
+        onupdate=func.now()
+    )
