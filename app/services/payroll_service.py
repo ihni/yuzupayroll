@@ -153,10 +153,13 @@ class PayrollService:
                     payroll_worklog for payroll_worklog in payroll_worklogs
                     if payroll.start_date <= payroll_worklog.worklog.date <= payroll.end_date
                 ]
+
+                from app.services import OrganizationService
+                organization = OrganizationService.get()
                 
                 total_hours = sum(payroll_worklog.worklog.hours_worked for payroll_worklog in filtered_data)
                 payroll.gross_pay = total_hours * payroll.employee.role.rate
-                payroll.net_pay = payroll.gross_pay * (1 - payroll.organization.tax_rate)
+                payroll.net_pay = payroll.gross_pay * (1 - organization.tax_rate)
                 logger.info(f"Recalculated payroll totals after date update")
 
             db.session.commit()

@@ -1,0 +1,30 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Payrolls{% endblock %}
+
+{% block content %}
+
+<h2>Edit Payroll #{{ payroll.id }}</h2>
+
+<form method="POST">
+    <label for="start_date">Start Date:</label>
+    <input
+      type="date"
+      id="start_date"
+      name="start_date"
+      value="{{ payroll.start_date.strftime('%Y-%m-%d') }}"
+      required
+    />
+
+    <label for="end_date">End Date:</label>
+    <input
+      type="date"
+      id="end_date"
+      name="end_date"
+      value="{{ payroll.end_date.strftime('%Y-%m-%d') }}"
+      required
+    />
+
+    <button type="submit">Update Payroll</button>
+</form>
+{% endblock %}

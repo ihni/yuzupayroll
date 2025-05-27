@@ -24,6 +24,10 @@
                           payroll_id=payroll.id) }}">
             Add Worklogs
         </a>
+
+        <a href="{{ url_for('payrolls.edit_payroll', payroll_id=payroll.id) }}">
+            <button>Edit Date Range</button>
+        </a>
         
         <form method="POST" action="{{ url_for('payrolls.finalize', payroll_id=payroll.id) }}" style="display: inline;">
             <button type="submit">Finalize Payroll</button>

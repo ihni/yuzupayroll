@@ -142,3 +142,35 @@ def unlock_worklog(payroll_id, worklog_id):
         flash(f"Error unlocking worklog: {str(e)}", "error")
 
     return redirect_back_to_view(payroll_id)
+
+@payrolls_bp.route("/<int:payroll_id>/edit", methods=["GET", "POST"])
+def edit_payroll(payroll_id):
+    payroll = PayrollService.get_by_id(payroll_id)
+    if not payroll:
+        flash("Payroll not found.", "error")
+        return redirect(url_for("payrolls.list_payrolls"))
+
+    if payroll.status != PayrollStatusEnum.DRAFT:
+        flash("Only DRAFT payrolls can be edited.", "warning")
+        return redirect_back_to_view(payroll_id)
+
+    if request.method == "POST":
+        try:
+            start_date_str = request.form.get("start_date")
+            end_date_str = request.form.get("end_date")
+            # Parse dates from form strings, example format: 'YYYY-MM-DD'
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+
+            updated_payroll = PayrollService.update(payroll_id, start_date=start_date, end_date=end_date)
+            if updated_payroll:
+                flash("Payroll updated successfully.", "success")
+            else:
+                flash("Failed to update payroll.", "error")
+        except Exception as e:
+            flash(f"Error updating payroll: {str(e)}", "error")
+
+        return redirect_back_to_view(payroll_id)
+
+    # GET method: render edit form
+    return render_template("payrolls/edit.html", payroll=payroll)

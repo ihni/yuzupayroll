@@ -21,6 +21,7 @@ def create_app():
     from app.routes import worklogs_bp
     from app.routes import payrolls_bp
     from app.routes import organization_bp
+    from app.routes import dashboard_bp
     
     # register blueprints here:
     app.register_blueprint(home_bp)
@@ -29,5 +30,6 @@ def create_app():
     app.register_blueprint(worklogs_bp)
     app.register_blueprint(payrolls_bp)
     app.register_blueprint(organization_bp)
+    app.register_blueprint(dashboard_bp)
     
     return app
