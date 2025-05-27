@@ -23,7 +23,7 @@
     - [ ] Payroll
     - [ ] Payroll Worklog
     - [X] Role
-    - [ ] Worklog
+    - [X] Worklog
 - [ ] Match up the routers with the service layer
 
 ### Features

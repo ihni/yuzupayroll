@@ -1,6 +1,7 @@
 from app.extensions import db
 from app.models import PayrollWorklog, Worklog, Payroll, PayrollStatusEnum, WorklogStatusEnum
-from sqlalchemy.exc import SQLAlchemyError # type: ignore
+from sqlalchemy.exc import SQLAlchemyError  # type: ignore
+from sqlalchemy.orm import joinedload       # type: ignore
 from app.utils import get_logger
 
 logger = get_logger(__name__)
@@ -9,6 +10,17 @@ logger = get_logger(__name__)
 # ADD LOG STATEMENTS
 
 class PayrollWorklogService:
+
+    @staticmethod
+    def get_worklogs_for_payroll(payroll_id: int) -> list[PayrollWorklog]:
+        """fetches all worklogs added to payroll"""
+        payroll_worklogs = (
+            PayrollWorklog.query
+            .options(joinedload(PayrollWorklog.worklog))  # eager load the worklog relationship
+            .filter_by(payroll_id=payroll_id)
+            .all()
+        )
+        return payroll_worklogs
 
     @staticmethod
     def is_worklog_in_finalized_payroll(worklog_id: int) -> bool:
@@ -30,7 +42,7 @@ class PayrollWorklogService:
     def bulk_create_associations(payroll_id: int, worklog_ids: list[int]) -> bool:
         """bulk create payroll-worklog associations"""
         try:
-            worklogs = Worklog.query.filter_by(
+            worklogs = Worklog.query.filter(
                 Worklog.id.in_(worklog_ids),
                 Worklog.status == WorklogStatusEnum.ACTIVE).all()
             
@@ -58,13 +70,13 @@ class PayrollWorklogService:
     def lock_snapshot(payroll_id: int) -> bool:
         """mark payroll as locked"""
         try:
-            PayrollWorklog.query.filter_by(
-                payroll_id=payroll_id
-            ).update({'snapshot_locked': True})
+            PayrollWorklog.query.filter_by(payroll_id=payroll_id).update(
+                {'snapshot_locked': True}, synchronize_session='fetch'
+            )
             db.session.commit()
-            logger.info("message")
+            logger.info(f"Snapshot locked payroll worklogs for payroll ID {payroll_id}")
             return True
         except SQLAlchemyError:
             db.session.rollback()
-            logger.exception("message")
+            logger.exception(f"Failed to lock snapshot payroll worklogs for payroll ID {payroll_id}")
             return False
