@@ -27,7 +27,6 @@ class WorklogService:
             logger.exception(f"Failed to create work log for employee ID {emp_id}: {str(e)}")
             raise
 
-    # TODO: no need to serialize if avoiding js for now
     @staticmethod
     def get_eligible_for_payroll(emp_id: int, start: datetime, end: datetime) -> list[Worklog]:
         """return serialized worklog data for payroll processing"""
@@ -36,15 +35,9 @@ class WorklogService:
             Worklog.date.between(start, end),
             Worklog.status == WorklogStatusEnum.ACTIVE
         ).all()
-        logger.info(f"Serialized ({len(worklogs)}) work logs for employee ID {emp_id} between {start} - {end}")
-        return [
-            {
-                'id': w.id,
-                'hours_worked': w.hours_worked,
-                'date': w.date
-            } for w in worklogs
-        ]
-
+        logger.info(f"Fetching {len(worklogs)} work logs for employee ID {emp_id} between {start} - {end}")
+        return worklogs
+    
     @staticmethod
     def lock(worklog_id: int) -> bool:
         """lock a single work log"""
@@ -64,7 +57,6 @@ class WorklogService:
             logger.exception(f"Failed to lock work log ID {worklog_id}")
             raise
     
-    # TODO: replace depreceated utcnow with timezone.utc
     @staticmethod
     def bulk_lock(worklog_ids: list[int]) -> bool:
         """lock multiple worklogs in one transaction"""
@@ -75,7 +67,7 @@ class WorklogService:
             ).update(
                 {
                 'status': WorklogStatusEnum.LOCKED,
-                'locked_at': datetime.utcnow()
+                'locked_at': datetime.now(timezone.utc)
                 }
             )
             db.session.commit()

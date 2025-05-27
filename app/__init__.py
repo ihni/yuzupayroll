@@ -1,4 +1,5 @@
-from flask import Flask # type: ignore
+from flask import Flask, render_template    # type: ignore
+from sqlalchemy.exc import OperationalError # type: ignore
 from app.extensions import db
 from app.config import Config
 
@@ -8,6 +9,10 @@ def create_app():
     app.config.from_object(Config)
 
     db.init_app(app)
+
+    @app.errorhandler(OperationalError)
+    def handle_db_connection_error(error):
+        return render_template('errors/db_unavailable.html'), 503
 
     # import routers here:
     from app.routes import roles_bp
