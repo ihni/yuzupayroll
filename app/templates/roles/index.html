@@ -33,7 +33,7 @@
             <td>{{ role.status.value }}</td>
             <td>{{ role.employees|length }}</td>
             <td>
-                <a href="{{ url_for('roles.view', role_id=role.id) }}">View</a>
+                <a href="{{ url_for('roles.details', role_id=role.id) }}">Details</a>
                 {% if role.status.name != 'ARCHIVED' %}
                 | <a href="{{ url_for('roles.edit', role_id=role.id) }}">Edit</a>
                 {% endif %}

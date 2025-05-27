@@ -1,97 +1,147 @@
+from typing import Optional, Dict, Any
 from flask import (
     render_template,
     Blueprint,
     request,
     redirect,
     url_for,
-    flash
+    flash,
+    abort,
+    Response
 )
+from werkzeug.exceptions import BadRequest # type: ignore
 from app.services import RoleService
 from app.models import RoleStatusEnum
 
-roles_bp = Blueprint("roles", __name__, url_prefix="/roles")
+roles_bp = Blueprint(
+    "roles", 
+    __name__, 
+    url_prefix="/roles",
+    template_folder="templates"
+)
 
-def redirect_back():
-    return redirect(request.referrer or url_for('roles.index'))
+def _redirect_back(default_endpoint: str = 'roles.index') -> Response:
+    """helper to redirect back or to default endpoint"""
+    return redirect(request.referrer or url_for(default_endpoint))
 
-@roles_bp.route("/", methods=["GET"])
-def index():
+def _get_valid_status_filter() -> Optional[RoleStatusEnum]:
+    """validate and return status filter from request args"""
     status_filter = request.args.get('status', '').upper()
     if status_filter in RoleStatusEnum.__members__:
-        roles = RoleService.get_all(status=RoleStatusEnum[status_filter])
-    else:
-        roles = RoleService.get_all()
-    return render_template("roles/index.html", roles=roles, status_filter=status_filter)
+        return RoleStatusEnum[status_filter]
+    return None
+
+@roles_bp.route("/", methods=["GET"])
+def index() -> str:
+    """list roles with optional status filtering"""
+    status_filter = _get_valid_status_filter()
+    roles = RoleService.get_all(status=status_filter)
+    
+    return render_template(
+        "roles/index.html",
+        roles=roles,
+        status_filter=status_filter.value if status_filter else '',
+        status_choices=RoleStatusEnum
+    )
 
 @roles_bp.route("/create", methods=["GET", "POST"])
-def create():
-    if request.method == "POST":
-        try:
-            role = RoleService.create(
-                name=request.form['name'],
-                rate=float(request.form['rate'])
-            )
-            if role:
-                flash('Role created successfully!', 'success')
-                return redirect(url_for('roles.view', role_id=role.id))
-            else:
-                flash('Role name already exists', 'error')
-        except ValueError:
-            flash('Invalid rate value', 'error')
-        except Exception as e:
-            flash(f'Error creating role: {e}', 'error')
-
-    return render_template("roles/create.html")
-
+def create() -> Response | str:
+    """create a new role"""
+    if request.method == "GET":
+        return render_template("roles/create.html")
+    
+    try:
+        form_data = {
+            'name': request.form['name'].strip(),
+            'rate': float(request.form['rate'])
+        }
+        
+        role = RoleService.create(**form_data)
+        if not role:
+            flash('Role name already exists', 'error')
+            return render_template("roles/create.html", form_data=form_data)
+        
+        flash('Role created successfully!', 'success')
+        return redirect(url_for('roles.details', role_id=role.id))
+    
+    except ValueError as e:
+        flash('Invalid rate value' if 'rate' in str(e) else 'Invalid form data', 'error')
+        return render_template("roles/create.html", form_data=request.form)
+    except Exception as e:
+        flash(f'System error: {str(e)}', 'error')
+        return render_template("roles/create.html", form_data=request.form)
 
 @roles_bp.route("/<int:role_id>", methods=["GET"])
-def view(role_id):
+def details(role_id: int) -> str:
+    """view role details"""
     role = RoleService.get_by_id(role_id)
     if not role:
         flash('Role not found', 'error')
-        return redirect(url_for('roles.index'))
-    return render_template("roles/view.html", role=role)
+        abort(404)
+        
+    return render_template("roles/details.html", role=role)
 
 @roles_bp.route("/<int:role_id>/edit", methods=["GET", "POST"])
-def edit(role_id):
+def edit(role_id: int) -> Response | str:
+    """edit role information"""
     role = RoleService.get_by_id(role_id)
     if not role:
         flash('Role not found', 'error')
-        return redirect(url_for('roles.index'))
-
-    if request.method == "POST":
-        try:
-            update_data = {
-                'name': request.form['name'],
-                'rate': float(request.form['rate']),
-                'status': RoleStatusEnum[request.form['status']]
-            }
-            updated_role = RoleService.update(role_id, **update_data)
-            if updated_role:
-                flash('Role updated successfully!', 'success')
-                return redirect(url_for('roles.view', role_id=role_id))
-            else:
-                flash('Update failed - name may be in use', 'error')
-        except (ValueError, KeyError):
-            flash('Invalid form data', 'error')
-        except Exception as e:
-            flash(f'Error updating role: {e}', 'error')
-
-    return render_template("roles/edit.html", role=role, statuses=RoleStatusEnum)
-
+        abort(404)
+    
+    if request.method == "GET":
+        return render_template(
+            "roles/edit.html",
+            role=role,
+            statuses=RoleStatusEnum
+        )
+    
+    try:
+        update_data: Dict[str, Any] = {
+            'name': request.form['name'].strip(),
+            'rate': float(request.form['rate']),
+            'status': RoleStatusEnum[request.form['status']]
+        }
+        
+        updated_role = RoleService.update(role_id, **update_data)
+        if not updated_role:
+            flash('Update failed - name may be in use', 'error')
+            return render_template(
+                "roles/edit.html",
+                role=role,
+                statuses=RoleStatusEnum
+            )
+        
+        flash('Role updated successfully!', 'success')
+        return redirect(url_for('roles.details', role_id=role_id))
+    
+    except (ValueError, KeyError) as e:
+        flash('Invalid form data: please check all fields', 'error')
+    except Exception as e:
+        flash(f'System error: {str(e)}', 'error')
+    
+    return render_template(
+        "roles/edit.html",
+        role=role,
+        statuses=RoleStatusEnum
+    )
 
 @roles_bp.route("/<int:role_id>/archive", methods=["POST"])
-def archive(role_id):
-    if RoleService.archive(role_id):
-        flash('Role archived', 'success')
-    else:
+def archive(role_id: int) -> Response:
+    """archive a role"""
+    if not RoleService.archive(role_id):
         flash('Archive failed - role not found or assigned to employees', 'error')
-    return redirect_back()
+        abort(404)
+    
+    flash('Role archived successfully', 'success')
+    return _redirect_back()
 
 @roles_bp.route("/<int:role_id>/restore", methods=["POST"])
-def restore(role_id):
-    if RoleService.restore(role_id):
-        flash('Role restored', 'success')
-    else:
+def restore(role_id: int) -> Response:
+    """restore an archived role"""
+    if not RoleService.restore(role_id):
         flash('Restore failed - role not found or not archived', 'error')
-    return redirect_back()
+        abort(404)
+    
+    flash('Role restored successfully', 'success')
+    return _redirect_back()

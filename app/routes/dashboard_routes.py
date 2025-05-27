@@ -6,7 +6,7 @@ from app.models import Role, PayrollWorklog, Worklog, Employee, RoleStatusEnum
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
-def get_net_salary_by_role():
+def _get_net_salary_by_role():
     """
     Calculate total net salary grouped by active roles.
     Returns two lists: role names and corresponding net salary totals.
@@ -57,7 +57,7 @@ def dashboard():
         status_counts[p.status.name] += 1
 
     # Get net salary by role for breakdown
-    role_labels, role_net_totals = get_net_salary_by_role()
+    role_labels, role_net_totals = _get_net_salary_by_role()
 
     return render_template(
         "dashboard/index.html",

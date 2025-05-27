@@ -35,7 +35,7 @@
             <td>{{ payroll.total_hours|default(0, true) }}</td>
             <td>${{ payroll.gross_pay|default(0, true) }}</td>
             <td>
-                <a href="{{ url_for('payrolls.view', payroll_id=payroll.id) }}">View</a>
+                <a href="{{ url_for('payrolls.details', payroll_id=payroll.id) }}">Details</a>
             </td>
         </tr>
         {% endfor %}

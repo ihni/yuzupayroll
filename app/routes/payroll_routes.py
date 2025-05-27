@@ -1,173 +1,205 @@
+from datetime import datetime
+from typing import List, Optional
 from flask import (
-    render_template, 
+    render_template,
     Blueprint,
     request,
     redirect,
     url_for,
-    flash
+    flash,
+    abort,
+    Response
 )
-from app.services import PayrollService, PayrollWorklogService, WorklogService
+from werkzeug.exceptions import BadRequest # type: ignore
+from app.services import PayrollService
 from app.models import PayrollStatusEnum, WorklogStatusEnum
-from datetime import datetime
 
-payrolls_bp = Blueprint("payrolls", __name__, url_prefix="/payrolls")
+payrolls_bp = Blueprint(
+    "payrolls",
+    __name__,
+    url_prefix="/payrolls",
+)
 
-def redirect_back_to_view(payroll_id):
+def _redirect_to_payroll_view(payroll_id: int) -> Response:
+    """helper to redirect to payroll view page"""
     return redirect(url_for('payrolls.view', payroll_id=payroll_id))
 
-def _validate_draft_payroll(payroll_id):
-    payroll = PayrollService.get_by_id(payroll_id)
-    if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
-        flash('Operation not allowed on this payroll', 'error')
-        return None
-    return payroll
-
-@payrolls_bp.route("/", methods=["GET"])
-def index():
-    status_filter = request.args.get('status').upper()
-    if status_filter in PayrollStatusEnum.__members__:
-        payrolls = PayrollService.get_all(status=PayrollStatusEnum[status_filter.upper()])
-    else:
-        payrolls = PayrollService.get_all()
-    return render_template("payrolls/index.html", payrolls=payrolls, status_filter=status_filter)
-
-@payrolls_bp.route("/create", methods=["GET", "POST"])
-def create():
-    if request.method == "POST":
-        try:
-            employee_id = int(request.form['employee_id'])
-            start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d')
-            end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d')
-            
-            if start_date >= end_date:
-                flash('End date must be after start date', 'error')
-                return redirect(url_for('payrolls.create'))
-            
-            payroll = PayrollService.create_payroll(
-                employee_id=employee_id,
-                start_date=start_date,
-                end_date=end_date
-            )
-            flash('Payroll created successfully!', 'success')
-            return redirect(url_for('payrolls.view', payroll_id=payroll.id))
-        
-        except ValueError as e:
-            flash('Invalid date format or employee ID', 'error')
-        except Exception as e:
-            flash(f'Error creating payroll: {str(e)}', 'error')
-    
-    return render_template("payrolls/create.html")
-
-@payrolls_bp.route("/<int:payroll_id>", methods=["GET"])
-def view(payroll_id):
+def _validate_draft_payroll(payroll_id: int) -> Optional[dict]:
+    """validate payroll exists and is in DRAFT status"""
     payroll = PayrollService.get_by_id(payroll_id)
     if not payroll:
         flash('Payroll not found', 'error')
-        return redirect(url_for('payrolls.index'))
+        abort(404)
+    if payroll.status != PayrollStatusEnum.DRAFT:
+        flash('Operation only allowed on DRAFT payrolls', 'error')
+        return None
+    return payroll
+
+def _parse_date(date_str: str) -> datetime:
+    """parse and validate date string"""
+    try:
+        return datetime.strptime(date_str, '%Y-%m-%d')
+    except ValueError:
+        raise BadRequest("Invalid date format. Use YYYY-MM-DD")
+
+@payrolls_bp.route("/", methods=["GET"])
+def index() -> str:
+    """list all payrolls with optional status filtering"""
+    status_filter = request.args.get('status', '').upper()
+    if status_filter in PayrollStatusEnum.__members__:
+        payrolls = PayrollService.get_all(status=PayrollStatusEnum[status_filter])
+    else:
+        payrolls = PayrollService.get_all()
+    
+    return render_template(
+        "payrolls/index.html",
+        payrolls=payrolls,
+        status_filter=status_filter,
+        status_choices=PayrollStatusEnum
+    )
+
+@payrolls_bp.route("/create", methods=["GET", "POST"])
+def create() -> Response | str:
+    """create a new payroll"""
+    if request.method == "GET":
+        return render_template("payrolls/create.html")
+    
+    try:
+        employee_id = int(request.form['employee_id'])
+        start_date = _parse_date(request.form['start_date'])
+        end_date = _parse_date(request.form['end_date'])
+        
+        if start_date >= end_date:
+            flash('End date must be after start date', 'error')
+            return render_template("payrolls/create.html", form_data=request.form)
+        
+        payroll = PayrollService.create_payroll(
+            employee_id=employee_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        flash('Payroll created successfully!', 'success')
+        return _redirect_to_payroll_view(payroll.id)
+    
+    except (KeyError, BadRequest) as e:
+        flash(str(e) or 'Missing required fields', 'error')
+        return render_template("payrolls/create.html", form_data=request.form)
+    except Exception as e:
+        flash('Failed to create payroll', 'error')
+        return render_template("payrolls/create.html", form_data=request.form)
+
+@payrolls_bp.route("/<int:payroll_id>", methods=["GET"])
+def view(payroll_id: int) -> str:
+    """view payroll details"""
+    payroll = PayrollService.get_by_id(payroll_id)
+    if not payroll:
+        flash('Payroll not found', 'error')
+        abort(404)
+        
     return render_template(
         "payrolls/view.html",
         payroll=payroll,
         PayrollStatusEnum=PayrollStatusEnum,
-        WorklogStatusEnum=WorklogStatusEnum,
+        WorklogStatusEnum=WorklogStatusEnum
     )
 
 @payrolls_bp.route("/<int:payroll_id>/calculate", methods=["POST"])
-def calculate(payroll_id):
-    payroll = _validate_draft_payroll(payroll_id)
-    if not payroll:
-        return redirect_back_to_view(payroll_id)
+def calculate(payroll_id: int) -> Response:
+    """calculate payroll totals"""
+    if not _validate_draft_payroll(payroll_id):
+        return _redirect_to_payroll_view(payroll_id)
 
     try:
         PayrollService.calculate_totals(payroll_id)
         flash('Payroll calculated successfully!', 'success')
     except Exception as e:
-        flash(f'Calculation failed: {e}', 'error')
+        flash(f'Calculation failed: {str(e)}', 'error')
 
-    return redirect_back_to_view(payroll_id)
+    return _redirect_to_payroll_view(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/finalize", methods=["POST"])
-def finalize(payroll_id):
-    payroll = _validate_draft_payroll(payroll_id)
-    if not payroll:
-        return redirect_back_to_view(payroll_id)
+def finalize(payroll_id: int) -> Response:
+    """finalize a payroll"""
+    if not _validate_draft_payroll(payroll_id):
+        return _redirect_to_payroll_view(payroll_id)
 
     try:
         if PayrollService.finalize(payroll_id):
-            flash('Payroll finalized!', 'success')
+            flash('Payroll finalized successfully!', 'success')
         else:
-            flash('Finalization failed', 'error')
+            flash('Finalization failed - check payroll details', 'error')
     except Exception as e:
-        flash(f'Error: {e}', 'error')
+        flash(f'System error during finalization: {str(e)}', 'error')
 
-    return redirect_back_to_view(payroll_id)
+    return _redirect_to_payroll_view(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/add-worklogs", methods=["POST"])
-def add_worklogs(payroll_id):
+def add_worklogs(payroll_id: int) -> Response:
+    """add worklogs to payroll"""
+    if not _validate_draft_payroll(payroll_id):
+        return _redirect_to_payroll_view(payroll_id)
+
     try:
-        worklog_ids = list(map(int, request.form.getlist('worklog_ids')))
-        PayrollService.add_worklogs_in_payroll(payroll_id, worklog_ids)
-        flash("Worklogs added and totals updated", "success")
+        worklog_ids = [int(id) for id in request.form.getlist('worklog_ids')]
+        if not worklog_ids:
+            flash('No worklogs selected', 'error')
+            return _redirect_to_payroll_view(payroll_id)
+
+        added_count = PayrollService.add_worklogs_to_payroll(payroll_id, worklog_ids)
+        flash(f'Added {added_count} worklogs to payroll', 'success')
+    except ValueError:
+        flash('Invalid worklog IDs provided', 'error')
     except Exception as e:
-        flash(str(e), "error")
-    return redirect_back_to_view(payroll_id)
+        flash(f'Failed to add worklogs: {str(e)}', 'error')
+
+    return _redirect_to_payroll_view(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/remove-worklog/<int:worklog_id>", methods=["POST"])
-def remove_worklog(payroll_id, worklog_id):
-    try:
-        PayrollService.remove_worklogs_in_payroll(payroll_id, [worklog_id])
-        flash("Worklog removed and totals updated", "success")
-    except Exception as e:
-        flash(str(e), "error")
-    return redirect_back_to_view(payroll_id)
+def remove_worklog(payroll_id: int, worklog_id: int) -> Response:
+    """Remove worklog from payroll."""
+    if not _validate_draft_payroll(payroll_id):
+        return _redirect_to_payroll_view(payroll_id)
 
-@payrolls_bp.route('/<int:payroll_id>/worklogs/<int:worklog_id>/lock', methods=['POST'])
-def lock_worklog(payroll_id, worklog_id):
     try:
-        if PayrollService.lock_worklog_in_payroll(payroll_id, worklog_id):
-            flash("Worklog locked.", "success")
+        if PayrollService.remove_worklogs_from_payroll(payroll_id, [worklog_id]):
+            flash('Worklog removed successfully', 'success')
         else:
-            flash("Could not lock worklog.", "warning")
+            flash('Failed to remove worklog', 'error')
     except Exception as e:
-        flash(f"Error locking worklog: {e}", "error")
+        flash(f'System error: {str(e)}', 'error')
 
-    return redirect_back_to_view(payroll_id)
-
-@payrolls_bp.route('/<int:payroll_id>/worklogs/<int:worklog_id>/unlock', methods=['POST'])
-def unlock_worklog(payroll_id, worklog_id):
-    try:
-        if PayrollService.unlock_worklog_in_payroll(payroll_id, worklog_id):
-            flash("Worklog unlocked.", "success")
-        else:
-            flash("Could not unlock worklog.", "warning")
-    except Exception as e:
-        flash(f"Error unlocking worklog: {e}", "error")
-
-    return redirect_back_to_view(payroll_id)
+    return _redirect_to_payroll_view(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/edit", methods=["GET", "POST"])
-def edit_payroll(payroll_id):
+def edit(payroll_id: int) -> Response | str:
+    """edit payroll details"""
     payroll = PayrollService.get_by_id(payroll_id)
     if not payroll:
-        flash("Payroll not found.", "error")
-        return redirect(url_for("payrolls.index"))
-
+        flash('Payroll not found', 'error')
+        abort(404)
+    
     if payroll.status != PayrollStatusEnum.DRAFT:
-        flash("Only DRAFT payrolls can be edited.", "warning")
-        return redirect_back_to_view(payroll_id)
+        flash('Only DRAFT payrolls can be edited', 'error')
+        return _redirect_to_payroll_view(payroll_id)
 
-    if request.method == "POST":
-        try:
-            start_date = datetime.strptime(request.form.get("start_date"), "%Y-%m-%d")
-            end_date = datetime.strptime(request.form.get("end_date"), "%Y-%m-%d")
+    if request.method == "GET":
+        return render_template("payrolls/edit.html", payroll=payroll)
 
-            updated_payroll = PayrollService.update(payroll_id, start_date=start_date, end_date=end_date)
-            if updated_payroll:
-                flash("Payroll updated successfully.", "success")
-            else:
-                flash("Failed to update payroll.", "error")
-        except Exception as e:
-            flash(f"Error updating payroll: {e}", "error")
+    try:
+        start_date = _parse_date(request.form['start_date'])
+        end_date = _parse_date(request.form['end_date'])
+        
+        if start_date >= end_date:
+            flash('End date must be after start date', 'error')
+            return render_template("payrolls/edit.html", payroll=payroll)
 
-        return redirect_back_to_view(payroll_id)
+        if PayrollService.update(payroll_id, start_date=start_date, end_date=end_date):
+            flash('Payroll updated successfully', 'success')
+        else:
+            flash('Failed to update payroll', 'error')
+    except (KeyError, BadRequest) as e:
+        flash(str(e) or 'Invalid form data', 'error')
+    except Exception as e:
+        flash(f'System error: {str(e)}', 'error')
 
-    return render_template("payrolls/edit.html", payroll=payroll)
+    return _redirect_to_payroll_view(payroll_id)

@@ -33,7 +33,7 @@
             <td>{{ employee.role.name if employee.role else 'None' }}</td>
             <td>{{ employee.status.value }}</td>
             <td>
-                <a href="{{ url_for('employees.view', emp_id=employee.id) }}">View</a>
+                <a href="{{ url_for('employees.details', emp_id=employee.id) }}">Details</a>
                 {% if employee.status.name != 'ARCHIVED' %}
                 | <a href="{{ url_for('employees.edit', emp_id=employee.id) }}">Edit</a>
                 {% endif %}

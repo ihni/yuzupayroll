@@ -40,5 +40,5 @@
     <button type="submit">Update Employee</button>
 </form>
 
-<a href="{{ url_for('employees.view', emp_id=employee.id) }}">Cancel</a>
+<a href="{{ url_for('employees.details', emp_id=employee.id) }}">Cancel</a>
 {% endblock %}
