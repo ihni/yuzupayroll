@@ -1,11 +1,13 @@
 # Overview on Project Structure
 
 ## Architecture
+
 - Backend: Python (Flask)
 - DB: MySQL 8 (via Podman)
 - ORM: SQLAlchemy (via Flask Migrate)
 
 ## Schema and ERD
+
 <div align="center">
     <img src="erd.png" alt="ERD">
 </div>
@@ -15,14 +17,27 @@
 > [!NOTE]
 > Current design is not set and is constantly being revised
 
-Yuzu proccesses payrolls by compiling employee work logs and finalizing them into an 
-The process of generating a payroll slip is through compiling work logs and finalizing it such that it becomes a locked snapshot:
-Work logs are used to keep track of when an employee works and for how many hours, these are then used by the payroll via a join table which keeps track of it(`payroll_worklogs`)
-Payrolls itsef simply contain the information proccessed from those work logs and are mutable(the information will be regenerated according to the work logs) up until the work logs are locked allowing it to be finalized and immutable. Once locked, the payroll worklogs table will also tick a boolean flag (snapshot_locked) allowing it to leave an audit trail and preventing deletions nor updates to it. Work logs also become immutable at the time of a payroll becoming locked
+Yuzu proccesses payrolls by compiling employee work logs and finalizing them into an immutable payroll record
+- **Work logs** track when an employee works and the number of hours during their shift
+- These logs are then referenced by the payrolls through a join table, `payroll_worklogs`, which records the associated hours for auditing and traceability
+- **Payroll records** remain mutable while in `DRAFT` status, and its contents are dynamically calculated from the associated work logs
+- Once all relevant work logs used in a payroll are locked, the latter can be **finalized**. This:
+    - locks the payroll and its linked work logs
+    - flags the associated payroll in `payroll_worklogs.snapshot_locked` as `true`
+    - prevents any further modifications or deletions
 
-proccess ->
-generate work logs -> (you can either lock the work logs making them immutable or skip this and do it before finalizng the payroll)
--> generate a shell for payroll -> select work logs via date range -> (make any edits while payroll is in draft) -> finalize and lock payroll
+## Payroll Generation Process
 
-Current security concerns with this proccess
+1. Generate work logs
+2. Optionally lock work logs early to preserve their state
+3. Create a draft payroll record (a shell)
+4. Select work logs within a target date range
+5. Make any necessary edits while the payroll is in draft
+6. Finalize the payroll - locking both the payroll and associated work logs
+
+> [!IMPORTANT]
+> Finalization is only permitted if all linked work logs are locked. This guarantees consistency and data integrity across historical records
+
+## Current concerns regarding this process
+
 TBA
