@@ -19,16 +19,20 @@ class Employee(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False, index=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False, index=True)
 
-    status = db.Column(db.Enum(EmployeeStatusEnum, name='employee_status'),
-                       nullable=False,
-                       default=EmployeeStatusEnum.ACTIVE)
+    status = db.Column(
+        db.Enum(EmployeeStatusEnum, name='employee_status'),
+        nullable=False,
+        default=EmployeeStatusEnum.ACTIVE
+    )
     
     archived_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
-    updated_at = db.Column(db.DateTime, 
-                           nullable=False, 
-                           server_default=func.now(), 
-                           onupdate=func.now())
+    updated_at = db.Column(
+        db.DateTime, 
+        nullable=False, 
+        server_default=func.now(), 
+        onupdate=func.now()
+    )
 
     role = db.relationship('Role', back_populates='employees')
     worklogs = db.relationship('Worklog', back_populates='employee')
