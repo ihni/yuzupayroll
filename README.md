@@ -6,10 +6,15 @@
 	</p>
 </div>
 
-## Purpose
-A project made with a small team of 4 to create a simple and featureful application. Built using python as the backend and MySQL as the database dialect, it is a current work-in-progress web based application so we can test our programming capabilites.
+## Overview
+Built using Python and MySQL, Yuzu Payroll is designed to help small teams or organizations manage employees, work logs, and payroll operations
 
----
+> This project is actively developed by a team of 4 students as a learning experience in backend, frontend, and database-heavy application designs
+
+
+### Documentation
+Documentation over the project structure can be read here:
+[documentation](docs/overview.md)
 
 ## Getting setup
 
@@ -20,10 +25,12 @@ Feel free to use your respective package managers, e.g, `brew`, to install these
 - Python (version 3.9 or higher)
 
 ### Setup
+
 #### 1. Initialize the VM
 ```bash
 podman machine init
 ```
+
 #### 2. Start the VM (Optional if not on Linux or WSL)
 ```bash
 podman machine start
@@ -35,14 +42,19 @@ podman-compose up --build
 ```
 
 ### Using Make
+
+> [!IMPORTANT]
+> Always read through the source code before running any scripts from the internet
+
 You can also use `make` for convenience:
+
 ```bash
 make help
 ```
+
 This will list available targets like up, down, etc.
 
 ### Environment Compatibility
-
 > This project has been confirmed to run successfully in the following environments:
 > - Fedora 42 on WSL (Windows Subsystem for Linux)
 > - macOS (ARM)
