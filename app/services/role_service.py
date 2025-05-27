@@ -36,17 +36,6 @@ class RoleService:
             logger.warning(f"Role ID {role_id} not found")
         return role
     
-    # TODO: Remove this, not needed for now
-    @staticmethod
-    def get_by_name(name) -> Role:
-        """Get role by exact name match"""
-        role = Role.query.filter_by(name=name).first()
-        if role:
-            logger.debug(f"Found role '{name}'")
-        else:
-            logger.debug(f"Role '{name}' not found")
-        return role
-    
     @staticmethod
     def get_all(status: RoleStatusEnum = None) -> list[Role]:
         """get all roles, optionally filtered by status
