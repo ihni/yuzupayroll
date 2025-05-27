@@ -2,7 +2,7 @@
 	<img src=".github/fruit.png" height="80px" width="80px" alt="Yuzu Payroll">
 	<h2>Yuzu Payroll</h2>
 	<p align="center">
-		<p>An open source payroll management system</p>
+		<p>A free and open source payroll management system</p>
 	</p>
 </div>
 
