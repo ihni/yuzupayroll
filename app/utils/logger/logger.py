@@ -11,8 +11,8 @@ def get_logger(name=__name__):
             logging, 
             LoggerConfig.LOG_LEVEL.upper(), 
             logging.INFO
-            )
         )
+    )
 
     if not logger.handlers:
         formatter = logging.Formatter(LoggerConfig.LOG_FORMATTER)

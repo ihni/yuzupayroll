@@ -1,7 +1,7 @@
 from app.extensions import db
 from app.models import Role, RoleStatusEnum
 from datetime import datetime, timezone
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError # type: ignore
 from app.utils import get_logger
 
 logger = get_logger(__name__)
@@ -10,7 +10,7 @@ class RoleService:
 
     @staticmethod
     def create(name: str, rate: float) -> Role | None:
-        """Create a new role if name doesn't exist"""
+        """create a new role if name doesn't exist"""
         try:
             if Role.query.filter_by(name=name).first():
                 logger.warning(f"Role '{name}' already exists")
@@ -27,8 +27,8 @@ class RoleService:
             raise
     
     @staticmethod
-    def get_by_id(role_id):
-        """Get role by ID"""
+    def get_by_id(role_id) -> Role | None:
+        """get role by ID"""
         role = Role.query.get(role_id)
         if role:
             logger.debug(f"Found role ID {role_id}")
@@ -36,8 +36,9 @@ class RoleService:
             logger.warning(f"Role ID {role_id} not found")
         return role
     
+    # TODO: Remove this, not needed for now
     @staticmethod
-    def get_by_name(name):
+    def get_by_name(name) -> Role:
         """Get role by exact name match"""
         role = Role.query.filter_by(name=name).first()
         if role:
@@ -47,8 +48,12 @@ class RoleService:
         return role
     
     @staticmethod
-    def get_all(status: RoleStatusEnum = None):
-        """Get all roles, optionally filtered by status"""
+    def get_all(status: RoleStatusEnum = None) -> list[Role]:
+        """get all roles, optionally filtered by status
+        
+        if status is given, it must be chosen from the EnumClass or else query will not return
+        expected results
+        """
         query = Role.query
         if status:
             query = query.filter_by(status=status)
@@ -60,9 +65,9 @@ class RoleService:
     @staticmethod
     def update(role_id: int, **kwargs) -> Role | None:
         """
-        Update role attributes
+        update role attributes
         
-        Args:
+        args:
             role_id: ID of role to update
             **kwargs: Fields to update:
                 - name (str): Must be unique
@@ -107,15 +112,14 @@ class RoleService:
 
     @staticmethod
     def archive(role_id: int) -> bool:
-        """Archive role if not assigned to employees"""
+        """archive role if not assigned to employees"""
         role = Role.query.get(role_id)
         if not role:
             logger.warning(f"Role ID {role_id} not found")
             return False
 
         if role.employees:
-            logger.warning(f"Cannot archive role ID {role_id} - "
-                           f"Assigned to {len(role.employees)} employees")
+            logger.warning(f"Cannot archive role ID {role_id} - " f"Assigned to {len(role.employees)} employees")
             return False
 
         try:
@@ -131,7 +135,7 @@ class RoleService:
 
     @staticmethod
     def restore(role_id: int) -> bool:
-        """Restore an archived role"""
+        """restore an archived role"""
         role = Role.query.get(role_id)
         if not role:
             logger.warning(f"Role ID {role_id} not found")

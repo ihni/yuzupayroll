@@ -1,6 +1,6 @@
 from app.extensions import db
 from app.models import PayrollWorklog, Worklog, WorklogStatusEnum
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError # type: ignore
 from app.utils import get_logger
 
 logger = get_logger(__name__)
@@ -12,7 +12,7 @@ class PayrollWorklogService:
 
     @staticmethod
     def bulk_create_associations(payroll_id: int, worklog_ids: list[int]) -> bool:
-        """Bulk creates payroll-worklog associations"""
+        """bulk create payroll-worklog associations"""
         try:
             worklogs = Worklog.query.filter_by(
                 Worklog.id.in_(worklog_ids),
@@ -40,7 +40,7 @@ class PayrollWorklogService:
 
     @staticmethod
     def lock_snapshot(payroll_id: int) -> bool:
-        """Marks all associations as snapshot locked"""
+        """mark payroll as locked"""
         try:
             PayrollWorklog.query.filter_by(
                 payroll_id=payroll_id

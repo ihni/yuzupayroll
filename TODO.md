@@ -18,6 +18,12 @@
 
 ### Core Logic
 - [ ] Complete the full functionality of service layers
+    - [X] Employee
+    - [X] Organization
+    - [X] Payroll
+    - [ ] Payroll Worklog
+    - [ ] Role
+    - [ ] Worklog
 - [ ] Match up the routers with the service layer
 
 ### Features

@@ -1,7 +1,7 @@
 from app.extensions import db
 from app.models import Employee, EmployeeStatusEnum
 from datetime import datetime, timezone
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError # type: ignore
 from app.utils import get_logger
 
 logger = get_logger(__name__)
@@ -10,17 +10,23 @@ class EmployeeService:
 
     @staticmethod
     def create(first_name: str, last_name: str, email: str, role_id: int) -> Employee | None:
-        """Creates a new employee with ACTIVE status if email doesn't exists"""
+        """create a new employee 
+        
+        returns an employee object with an ACTIVE status if the no email was found to already exist,
+        else it will return None
+        """
         try:
             if Employee.query.filter_by(email=email).first():
                 logger.warning(f"Email '{email}' already exists")
                 return None
 
-            employee = Employee(first_name=first_name,
-                                last_name=last_name,
-                                email=email,
-                                role_id=role_id,
-                                status=EmployeeStatusEnum.ACTIVE)
+            employee = Employee(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                role_id=role_id,
+                status=EmployeeStatusEnum.ACTIVE
+            )
             
             db.session.add(employee)
             db.session.commit()
@@ -33,7 +39,7 @@ class EmployeeService:
 
     @staticmethod
     def get_by_id(emp_id: int) -> Employee | None:
-        """Get employee by ID"""
+        """get employee by ID"""
         employee = Employee.query.get(emp_id)
         if employee:
             logger.info(f"Found employee ID {emp_id}")
@@ -43,7 +49,11 @@ class EmployeeService:
     
     @staticmethod
     def get_all(status: EmployeeStatusEnum = None) -> list[Employee]:
-        """Get all employees, optionally filtered by status"""
+        """get all employees, optionally filtered by status
+        
+        if status is given, it must be chosen from the EnumClass or else query will not return
+        expected results
+        """
         query = Employee.query
         if status:
             query = query.filter_by(status=status)
@@ -55,9 +65,9 @@ class EmployeeService:
     @staticmethod
     def update(emp_id: int, **kwargs) -> Employee | None:
         """
-        Update employee attributes
+        update employee attributes
         
-        Args:
+        args:
             emp_id: ID of the employee to update
             **kwargs: Attributes to update:
                 - first_name (str)
@@ -111,7 +121,7 @@ class EmployeeService:
 
     @staticmethod
     def archive(emp_id: int) -> bool:
-        """Archive an employee and set archived_at timestamp"""
+        """archive an employee"""
         employee = Employee.query.get(emp_id)
         if not employee:
             logger.warning(f"Archive failed: Employee ID {emp_id} not found")
@@ -134,7 +144,7 @@ class EmployeeService:
 
     @staticmethod
     def restore(emp_id: int) -> bool:
-        """Restore an archived employee"""
+        """restore an archived employee"""
         employee = Employee.query.get(emp_id)
         if not employee:
             logger.warning(f"Restore failed: Employee ID {emp_id} not found")
@@ -145,7 +155,7 @@ class EmployeeService:
             return False
 
         try:
-            employee.status = EmployeeStatusEnum.ACTIVE # inactive would most likely be preferrable
+            employee.status = EmployeeStatusEnum.ACTIVE
             employee.archived_at = None
             db.session.commit()
             logger.info(f"Restored employee ID {emp_id}")
