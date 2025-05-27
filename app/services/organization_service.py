@@ -1,6 +1,6 @@
 from app.extensions import db
 from app.models import Organization
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError # type: ignore
 from app.utils import get_logger
 
 logger = get_logger(__name__)
@@ -8,7 +8,7 @@ logger = get_logger(__name__)
 class OrganizationService:
     """
 
-    Organization Service does not need all of the CRUD
+    organization service does not need all the CRUD
     operations as it acts as a SINGLE ROW CONFIGURATION TABLE
 
     NO DELETION, NO CREATION SHOULD BE ADDED
@@ -17,19 +17,21 @@ class OrganizationService:
 
     @staticmethod
     def get() -> Organization | None:
-        """Get the organization config"""
+        """get the organization config"""
         org = Organization.query.first()
         if org:
             logger.debug("Fetched organization config")
+        else:
+            logger.error("No organization config found")
         return org
 
     @staticmethod
     def update(**kwargs) -> Organization | None:
         """
-        Update organization configuration
+        update organization configuration
 
-        Args:
-            **kwargs: Attributes to update:
+        args:
+            **kwargs: attributes to update
                 - name (str)
                 - total_salary_budget (Decimal)
                 - budget_start_month (int 1-12)

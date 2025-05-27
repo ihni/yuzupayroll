@@ -1,19 +1,13 @@
 from app.extensions import db
-from sqlalchemy import func
+from sqlalchemy import func # type: ignore
 
 class PayrollWorklog(db.Model):
     __tablename__ = "payroll_worklogs"
 
     id = db.Column(db.Integer, primary_key=True)
 
-    payroll_id = db.Column(db.Integer,
-                           db.ForeignKey('payrolls.id'),
-                           nullable=False,
-                           index=True)
-    worklog_id = db.Column(db.Integer,
-                           db.ForeignKey('worklogs.id'),
-                           nullable=False,
-                           index=True)
+    payroll_id = db.Column(db.Integer, db.ForeignKey('payrolls.id'), nullable=False, index=True)
+    worklog_id = db.Column(db.Integer, db.ForeignKey('worklogs.id'), nullable=False, index=True)
 
     hours_recorded = db.Column(db.Numeric(5, 2), nullable=False)
     snapshot_locked = db.Column(db.Boolean, nullable=False, server_default='0')

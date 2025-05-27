@@ -1,6 +1,6 @@
 from app.extensions import db
 from enum import Enum as PyEnum
-from sqlalchemy import func
+from sqlalchemy import func # type: ignore
 
 class EmployeeStatusEnum(PyEnum):
     ACTIVE = 'ACTIVE'
@@ -28,8 +28,8 @@ class Employee(db.Model):
     archived_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(
-        db.DateTime, 
-        nullable=False, 
+        db.DateTime,
+        nullable=False,
         server_default=func.now(), 
         onupdate=func.now()
     )

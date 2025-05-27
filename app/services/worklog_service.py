@@ -1,7 +1,7 @@
 from app.extensions import db
 from datetime import datetime, timezone
 from app.models import Worklog, WorklogStatusEnum
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError # type: ignore
 from app.utils import get_logger
 
 logger = get_logger(__name__)
@@ -9,13 +9,15 @@ logger = get_logger(__name__)
 class WorklogService:
 
     @staticmethod
-    def create_worklog_shell(emp_id: int, date: datetime, hours_worked: float):
-        """Creates a work log shell from a valid employee id"""
+    def create_worklog_shell(emp_id: int, date: datetime, hours_worked: float) -> Worklog:
+        """create a work log shell from a valid employee id"""
         try:
-            worklog = Worklog(employee_id=emp_id,
-                              date=date,
-                              hours_worked=hours_worked,
-                              status=WorklogStatusEnum.ACTIVE)
+            worklog = Worklog(
+                employee_id=emp_id,
+                date=date,
+                hours_worked=hours_worked,
+                status=WorklogStatusEnum.ACTIVE
+            )
             db.session.add(worklog)
             db.session.commit()
             logger.info(f"Created work log for employee ID {emp_id} on {date}")
@@ -25,21 +27,27 @@ class WorklogService:
             logger.exception(f"Failed to create work log for employee ID {emp_id}: {str(e)}")
             raise
 
+    # TODO: no need to serialize if avoiding js for now
     @staticmethod
-    def get_eligible_for_payroll(emp_id: int, start: datetime, end: datetime) -> list[dict]:
-        """Returns serialized worklog data for payroll processing"""
-        worklogs = Worklog.query.filter_by(Worklog.employee_id == emp_id,
-                                           Worklog.date.between(start, end),
-                                           Worklog.status == WorklogStatusEnum.ACTIVE).all()
+    def get_eligible_for_payroll(emp_id: int, start: datetime, end: datetime) -> list[Worklog]:
+        """return serialized worklog data for payroll processing"""
+        worklogs = Worklog.query.filter_by(
+            Worklog.employee_id == emp_id,
+            Worklog.date.between(start, end),
+            Worklog.status == WorklogStatusEnum.ACTIVE
+        ).all()
         logger.info(f"Serialized ({len(worklogs)}) work logs for employee ID {emp_id} between {start} - {end}")
-        return [{'id': w.id,
-                 'hours_worked': w.hours_worked,
-                 'date': w.date} 
-                 for w in worklogs]
+        return [
+            {
+                'id': w.id,
+                'hours_worked': w.hours_worked,
+                'date': w.date
+            } for w in worklogs
+        ]
 
     @staticmethod
     def lock(worklog_id: int) -> bool:
-        """Locks a single work log"""
+        """lock a single work log"""
         worklog = Worklog.query.get(worklog_id)
         if not worklog:
             logger.warning(f"Work log ID {worklog_id} not found")
@@ -55,18 +63,21 @@ class WorklogService:
             db.session.rollback()
             logger.exception(f"Failed to lock work log ID {worklog_id}")
             raise
-        
+    
+    # TODO: replace depreceated utcnow with timezone.utc
     @staticmethod
     def bulk_lock(worklog_ids: list[int]) -> bool:
-        """Locks multiple worklogs in one transaction"""
+        """lock multiple worklogs in one transaction"""
         try:
             # use model instead of db session
             db.session.query(Worklog).filter(
                 Worklog.id.in_(worklog_ids)
-            ).update({
+            ).update(
+                {
                 'status': WorklogStatusEnum.LOCKED,
                 'locked_at': datetime.utcnow()
-            })
+                }
+            )
             db.session.commit()
             logger.info(f"Bulk locked ({len(worklog_ids)}) work logs")
             return True
@@ -83,7 +94,7 @@ class WorklogService:
 
     @staticmethod
     def get_by_id(worklog_id) -> Worklog | None:
-        """Get work log by ID"""
+        """get work log by ID"""
         worklog = Worklog.query.get(worklog_id)
         if worklog:
             logger.info(f"Found work log ID {worklog_id}")
@@ -93,7 +104,11 @@ class WorklogService:
     
     @staticmethod
     def get_all(status: WorklogStatusEnum = None) -> list[Worklog]:
-        """Get all work logs, optionally filtered by status"""
+        """get all work logs, optionally filtered by statu
+        
+        if status is given, it must be chosen from the EnumClass or else query will not return
+        expected results
+        """
         query = Worklog.query
         if status:
             query = query.filter_by(status=status)
@@ -115,9 +130,9 @@ class WorklogService:
     @staticmethod
     def update(worklog_id: int, **kwargs) -> Worklog | None:
         """
-        Update work log attributes ONLY WHEN STATUS IS IN DRAFT
+        update work log attributes when in draft
         
-        Args:
+        args:
             worklog_id: ID of the work log to update
             **kwargs: Attributes to update:
                 - date (datetime)

@@ -1,5 +1,5 @@
 from app.extensions import db
-from sqlalchemy import func
+from sqlalchemy import func # type: ignore
 from enum import Enum as PyEnum
 
 class PayrollStatusEnum(PyEnum):
@@ -20,17 +20,21 @@ class Payroll(db.Model):
     gross_pay = db.Column(db.Numeric(10, 2), nullable=False)
     net_pay = db.Column(db.Numeric(10, 2), nullable=False)
 
-    status = db.Column(db.Enum(PayrollStatusEnum, name='payroll_status'),
-                       nullable=False,
-                       default=PayrollStatusEnum.DRAFT)
+    status = db.Column(
+        db.Enum(PayrollStatusEnum, name='payroll_status'),
+        nullable=False,
+        default=PayrollStatusEnum.DRAFT
+    )
     
     archived_at = db.Column(db.DateTime, nullable=True)
     finalized_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
-    updated_at = db.Column(db.DateTime,
-                           server_default=func.now(),
-                           onupdate=func.now(),
-                           nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
 
     employee = db.relationship('Employee', back_populates='payrolls')
     payroll_worklogs = db.relationship('PayrollWorklog', back_populates='payroll')
