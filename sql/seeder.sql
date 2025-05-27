@@ -17,35 +17,35 @@ INSERT INTO `organization` (
     'Northern Lights Inc.', 5000000.00, 1, 1, 12, 31, 0.05
 );
 
--- Insert roles with some ARCHIVED randomly
+-- Insert roles with default statuses (no ARCHIVED)
 INSERT INTO `roles` (`name`, `rate`, `status`, `archived_at`) VALUES
 ('Software Developer', 35.50, 'ACTIVE', NULL),
-('Nurse', 28.75, 'ARCHIVED', NOW()),
+('Nurse', 28.75, 'ACTIVE', NULL),
 ('Teacher', 25.00, 'ACTIVE', NULL),
-('Electrician', 30.25, 'ARCHIVED', NOW()),
+('Electrician', 30.25, 'ACTIVE', NULL),
 ('Accountant', 32.00, 'ACTIVE', NULL),
 ('Marketing Specialist', 27.50, 'ACTIVE', NULL),
-('Construction Worker', 22.00, 'ARCHIVED', NOW()),
+('Construction Worker', 22.00, 'ACTIVE', NULL),
 ('Customer Service', 18.50, 'ACTIVE', NULL);
 
--- Insert employees with various statuses
+-- Insert employees with default statuses (no ARCHIVED)
 INSERT INTO `employees` (
     `first_name`, `last_name`, `role_id`, `email`, `status`, `created_at`, `updated_at`, `archived_at`
 ) VALUES
 ('Juan', 'Dela Cruz', 1, 'juan.delacruz@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Maria', 'Santos', 2, 'maria.santos@example.com', 'INACTIVE', NOW(), NOW(), NULL),
-('Jose', 'Reyes', 3, 'jose.reyes@example.com', 'ARCHIVED', NOW(), NOW(), NOW()),
+('Jose', 'Reyes', 3, 'jose.reyes@example.com', 'INACTIVE', NOW(), NOW(), NULL),
 ('Ana', 'Gonzales', 4, 'ana.gonzales@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Pedro', 'Bautista', 5, 'pedro.bautista@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Luzviminda', 'Tan', 6, 'luzviminda.tan@example.com', 'ACTIVE', NOW(), NOW(), NULL),
-('Ricardo', 'Lim', 7, 'ricardo.lim@example.com', 'ARCHIVED', NOW(), NOW(), NOW()),
+('Ricardo', 'Lim', 7, 'ricardo.lim@example.com', 'INACTIVE', NOW(), NOW(), NULL),
 ('Corazon', 'Ong', 8, 'corazon.ong@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Eduardo', 'Sy', 1, 'eduardo.sy@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Imelda', 'Chua', 2, 'imelda.chua@example.com', 'INACTIVE', NOW(), NOW(), NULL),
 ('Anders', 'Johansson', 3, 'anders.johansson@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Elin', 'Nilsson', 4, 'elin.nilsson@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Lars', 'Andersson', 5, 'lars.andersson@example.com', 'ACTIVE', NOW(), NOW(), NULL),
-('Anna', 'Karlsson', 6, 'anna.karlsson@example.com', 'ARCHIVED', NOW(), NOW(), NOW()),
+('Anna', 'Karlsson', 6, 'anna.karlsson@example.com', 'INACTIVE', NOW(), NOW(), NULL),
 ('Johan', 'Eriksson', 7, 'johan.eriksson@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Maria', 'Larsson', 8, 'maria.larsson@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Per', 'Olsson', 1, 'per.olsson@example.com', 'ACTIVE', NOW(), NOW(), NULL),
@@ -53,16 +53,16 @@ INSERT INTO `employees` (
 ('Erik', 'Svensson', 3, 'erik.svensson@example.com', 'ACTIVE', NOW(), NOW(), NULL),
 ('Sofia', 'Gustafsson', 4, 'sofia.gustafsson@example.com', 'ACTIVE', NOW(), NOW(), NULL);
 
--- Insert worklogs (~30 per employee) with randomized status
+-- Insert worklogs (~30 per employee) with statuses ACTIVE or LOCKED only, no ARCHIVED
 INSERT INTO `worklogs` (`employee_id`, `date`, `hours_worked`, `status`, `created_at`, `updated_at`, `archived_at`, `locked_at`)
 SELECT 
     e.id,
     DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND() * 90) DAY),
     ROUND(4 + (RAND() * 8), 2),
-    ELT(FLOOR(1 + (RAND() * 3)), 'ACTIVE', 'LOCKED', 'ARCHIVED'),
+    ELT(FLOOR(1 + (RAND() * 2)), 'ACTIVE', 'LOCKED'),
     NOW(),
     NOW(),
-    IF(RAND() < 0.2, NOW(), NULL),
+    NULL,
     IF(RAND() < 0.3, NOW(), NULL)
 FROM 
     employees e,
@@ -73,7 +73,7 @@ FROM
      SELECT 21 UNION ALL SELECT 22 UNION ALL SELECT 23 UNION ALL SELECT 24 UNION ALL SELECT 25 UNION ALL
      SELECT 26 UNION ALL SELECT 27 UNION ALL SELECT 28 UNION ALL SELECT 29 UNION ALL SELECT 30) AS x;
 
--- Insert payrolls for last 3 months with some as DRAFT
+-- Insert payrolls for last 3 months, finalized only if all linked worklogs are locked, else draft
 INSERT INTO `payrolls` (
     `employee_id`, `start_date`, `end_date`, `gross_pay`, `net_pay`,
     `status`, `created_at`, `updated_at`, `archived_at`, `finalized_at`
@@ -84,10 +84,16 @@ SELECT
     LAST_DAY(DATE_SUB(CURDATE(), INTERVAL m.month_offset MONTH)),
     SUM(w.hours_worked * r.rate),
     ROUND(SUM(w.hours_worked * r.rate) * (1 - o.tax_rate), 2),
-    IF(RAND() < 0.2, 'DRAFT', 'FINALIZED'),
+    CASE
+        WHEN MIN(w.status) = 'LOCKED' THEN 'FINALIZED'
+        ELSE 'DRAFT'
+    END AS status,
     NOW(), NOW(),
     NULL,
-    IF(RAND() < 0.8, NOW(), NULL)
+    CASE
+        WHEN MIN(w.status) = 'LOCKED' THEN NOW()
+        ELSE NULL
+    END AS finalized_at
 FROM 
     employees e
 JOIN roles r ON r.id = e.role_id
