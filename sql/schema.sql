@@ -5,19 +5,19 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 
 -- -----------------------------------------------------
--- Schema payroll_db
+-- Schema yuzu_db
 -- -----------------------------------------------------
 
 -- -----------------------------------------------------
--- Schema payroll_db
+-- Schema yuzu_db
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `payroll_db` DEFAULT CHARACTER SET utf8 ;
-USE `payroll_db` ;
+CREATE SCHEMA IF NOT EXISTS `yuzu_db` DEFAULT CHARACTER SET utf8 ;
+USE `yuzu_db` ;
 
 -- -----------------------------------------------------
--- Table `payroll_db`.`roles`
+-- Table `yuzu_db`.`roles`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `payroll_db`.`roles` (
+CREATE TABLE IF NOT EXISTS `yuzu_db`.`roles` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(45) NOT NULL,
   `rate` DECIMAL(10,2) NOT NULL,
@@ -31,9 +31,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `payroll_db`.`employees`
+-- Table `yuzu_db`.`employees`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `payroll_db`.`employees` (
+CREATE TABLE IF NOT EXISTS `yuzu_db`.`employees` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `first_name` VARCHAR(45) NOT NULL,
   `last_name` VARCHAR(45) NOT NULL,
@@ -48,16 +48,16 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`employees` (
   UNIQUE INDEX `email_UNIQUE` (`email` ASC),
   CONSTRAINT `fk_employees_role_id`
     FOREIGN KEY (`role_id`)
-    REFERENCES `payroll_db`.`roles` (`id`)
+    REFERENCES `yuzu_db`.`roles` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `payroll_db`.`worklogs`
+-- Table `yuzu_db`.`worklogs`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `payroll_db`.`worklogs` (
+CREATE TABLE IF NOT EXISTS `yuzu_db`.`worklogs` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `employee_id` INT NOT NULL,
   `date` DATETIME NOT NULL,
@@ -71,16 +71,16 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`worklogs` (
   INDEX `employee_id_idx` (`employee_id` ASC),
   CONSTRAINT `fk_worklogs_employee_id`
     FOREIGN KEY (`employee_id`)
-    REFERENCES `payroll_db`.`employees` (`id`)
+    REFERENCES `yuzu_db`.`employees` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `payroll_db`.`payrolls`
+-- Table `yuzu_db`.`payrolls`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `payroll_db`.`payrolls` (
+CREATE TABLE IF NOT EXISTS `yuzu_db`.`payrolls` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `employee_id` INT NOT NULL,
   `start_date` DATETIME NOT NULL,
@@ -96,16 +96,16 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`payrolls` (
   INDEX `employee_id_idx` (`employee_id` ASC),
   CONSTRAINT `fk_payroll_employee_id`
     FOREIGN KEY (`employee_id`)
-    REFERENCES `payroll_db`.`employees` (`id`)
+    REFERENCES `yuzu_db`.`employees` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `payroll_db`.`organization`
+-- Table `yuzu_db`.`organization`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `payroll_db`.`organization` (
+CREATE TABLE IF NOT EXISTS `yuzu_db`.`organization` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(45) NOT NULL,
   `total_salary_budget` DECIMAL(10,2) NOT NULL,
@@ -121,9 +121,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `payroll_db`.`payroll_worklogs`
+-- Table `yuzu_db`.`payroll_worklogs`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `payroll_db`.`payroll_worklogs` (
+CREATE TABLE IF NOT EXISTS `yuzu_db`.`payroll_worklogs` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `payroll_id` INT NOT NULL,
   `worklog_id` INT NOT NULL,
@@ -135,12 +135,12 @@ CREATE TABLE IF NOT EXISTS `payroll_db`.`payroll_worklogs` (
   INDEX `fk_payroll_worklogs_worklog_id_idx` (`worklog_id` ASC),
   CONSTRAINT `fk_payroll_worklogs_payroll_id`
     FOREIGN KEY (`payroll_id`)
-    REFERENCES `payroll_db`.`payrolls` (`id`)
+    REFERENCES `yuzu_db`.`payrolls` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_payroll_worklogs_worklog_id`
     FOREIGN KEY (`worklog_id`)
-    REFERENCES `payroll_db`.`worklogs` (`id`)
+    REFERENCES `yuzu_db`.`worklogs` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;

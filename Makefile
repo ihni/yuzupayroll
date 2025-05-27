@@ -3,17 +3,17 @@
 # =========================
 export PODMAN_IGNORE_CGROUPSV1_WARNING=1
 COMPOSE := podman-compose
-PROJECT_NAME := payrollsys
+PROJECT_NAME := yuzupayroll
 MYSQL_USER := user
 MYSQL_PASS := pass
-MYSQL_DATABASE := payroll_db
+MYSQL_DATABASE := yuzu_db
 
 # =========================
 # Development commands
 # =========================
 .PHONY:
 help:
-	@echo "Payroll Management System"
+	@echo "Yuzu - Payroll Management System"
 	@echo "make init		- Initialize directories and permissions"
 	@echo "make up			- Start the container"
 	@echo "make up-detached	- Start the container detached"

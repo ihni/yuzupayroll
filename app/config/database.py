@@ -5,6 +5,6 @@ class DB:
         "host" : "db",
         "user" : "user",
         "password" : "pass",
-        "database" : "payroll_db",
+        "database" : "yuzu_db",
         "port" : 3306
     }

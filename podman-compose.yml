@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Containerfile
-    hostname: payroll-app
+    hostname: yuzu-app
     ports:
       - "5000:5000"
     volumes:
@@ -15,14 +15,14 @@ services:
     depends_on:
       - db
     networks:
-      - payroll-net
+      - yuzu-net
 
   db:
     image: mysql:8
-    hostname: payroll-db
+    hostname: yuzu-db
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: payroll_db
+      MYSQL_DATABASE: yuzu_db
       MYSQL_USER: user
       MYSQL_PASSWORD: pass
     ports:
@@ -32,8 +32,8 @@ services:
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
       - ./sql/seeder.sql:/docker-entrypoint-initdb.d/seeder.sql:ro
     networks:
-      - payroll-net
+      - yuzu-net
   
 networks:
-  payroll-net:
+  yuzu-net:
     driver: bridge
