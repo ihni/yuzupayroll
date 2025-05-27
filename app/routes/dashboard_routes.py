@@ -1,12 +1,16 @@
-from flask import Blueprint, render_template
-from app.extensions import db
+from flask import Blueprint, render_template # type: ignore
 from collections import defaultdict
+from app.extensions import db
 from app.services import PayrollService, OrganizationService
 from app.models import Role, PayrollWorklog, Worklog, Employee, RoleStatusEnum
-from sqlalchemy.orm import joinedload
-from sqlalchemy import select
+
+dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
 def get_net_salary_by_role():
+    """
+    Calculate total net salary grouped by active roles.
+    Returns two lists: role names and corresponding net salary totals.
+    """
     results = (
         db.session.query(
             Role.name,
@@ -29,29 +33,30 @@ def get_net_salary_by_role():
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
-@dashboard_bp.route('/')
+@dashboard_bp.route("/")
 def dashboard():
     payrolls = PayrollService.get_all()
     org = OrganizationService.get()
+
+    # Aggregate monthly totals for net and gross pay
     monthly_net_totals = defaultdict(float)
     monthly_gross_totals = defaultdict(float)
-
     for p in payrolls:
         month_key = p.created_at.strftime("%Y-%m")
-        net_pay_value = float(p.net_pay) if p.net_pay is not None else 0.0
-        gross_pay_value = float(p.gross_pay) if p.gross_pay is not None else 0.0
-        monthly_net_totals[month_key] += net_pay_value
-        monthly_gross_totals[month_key] += gross_pay_value
+        monthly_net_totals[month_key] += float(p.net_pay or 0)
+        monthly_gross_totals[month_key] += float(p.gross_pay or 0)
 
+    # Sort months for consistent chart x-axis
     sorted_months = sorted(monthly_net_totals.keys())
     net_totals = [monthly_net_totals[m] for m in sorted_months]
     gross_totals = [monthly_gross_totals[m] for m in sorted_months]
 
-    # Status counts
+    # Count payroll statuses
     status_counts = defaultdict(int)
     for p in payrolls:
         status_counts[p.status.name] += 1
 
+    # Get net salary by role for breakdown
     role_labels, role_net_totals = get_net_salary_by_role()
 
     return render_template(
@@ -65,5 +70,5 @@ def dashboard():
         fiscal_start=f"{org.budget_start_month}/{org.budget_start_day}",
         fiscal_end=f"{org.budget_end_month}/{org.budget_end_day}",
         role_labels=role_labels,
-        role_net_totals=role_net_totals
+        role_net_totals=role_net_totals,
     )

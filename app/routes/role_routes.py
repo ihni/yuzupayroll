@@ -11,18 +11,17 @@ from app.models import RoleStatusEnum
 
 roles_bp = Blueprint("roles", __name__, url_prefix="/roles")
 
+def redirect_back():
+    return redirect(request.referrer or url_for('roles.index'))
+
 @roles_bp.route("/", methods=["GET"])
 def index():
-    status_filter = request.args.get('status')
-    
-    if status_filter and status_filter.upper() in RoleStatusEnum.__members__:
-        roles = RoleService.get_all(status=RoleStatusEnum[status_filter.upper()])
+    status_filter = request.args.get('status', '').upper()
+    if status_filter in RoleStatusEnum.__members__:
+        roles = RoleService.get_all(status=RoleStatusEnum[status_filter])
     else:
         roles = RoleService.get_all()
-    
-    return render_template("roles/index.html",
-                         roles=roles,
-                         status_filter=status_filter)
+    return render_template("roles/index.html", roles=roles, status_filter=status_filter)
 
 @roles_bp.route("/create", methods=["GET", "POST"])
 def create():
@@ -32,7 +31,6 @@ def create():
                 name=request.form['name'],
                 rate=float(request.form['rate'])
             )
-            
             if role:
                 flash('Role created successfully!', 'success')
                 return redirect(url_for('roles.view', role_id=role.id))
@@ -41,9 +39,10 @@ def create():
         except ValueError:
             flash('Invalid rate value', 'error')
         except Exception as e:
-            flash(f'Error creating role: {str(e)}', 'error')
-    
+            flash(f'Error creating role: {e}', 'error')
+
     return render_template("roles/create.html")
+
 
 @roles_bp.route("/<int:role_id>", methods=["GET"])
 def view(role_id):
@@ -51,9 +50,7 @@ def view(role_id):
     if not role:
         flash('Role not found', 'error')
         return redirect(url_for('roles.index'))
-    
-    return render_template("roles/view.html",
-                         role=role)
+    return render_template("roles/view.html", role=role)
 
 @roles_bp.route("/<int:role_id>/edit", methods=["GET", "POST"])
 def edit(role_id):
@@ -61,7 +58,7 @@ def edit(role_id):
     if not role:
         flash('Role not found', 'error')
         return redirect(url_for('roles.index'))
-    
+
     if request.method == "POST":
         try:
             update_data = {
@@ -69,7 +66,6 @@ def edit(role_id):
                 'rate': float(request.form['rate']),
                 'status': RoleStatusEnum[request.form['status']]
             }
-            
             updated_role = RoleService.update(role_id, **update_data)
             if updated_role:
                 flash('Role updated successfully!', 'success')
@@ -79,11 +75,10 @@ def edit(role_id):
         except (ValueError, KeyError):
             flash('Invalid form data', 'error')
         except Exception as e:
-            flash(f'Error updating role: {str(e)}', 'error')
-    
-    return render_template("roles/edit.html",
-                         role=role,
-                         statuses=RoleStatusEnum)
+            flash(f'Error updating role: {e}', 'error')
+
+    return render_template("roles/edit.html", role=role, statuses=RoleStatusEnum)
+
 
 @roles_bp.route("/<int:role_id>/archive", methods=["POST"])
 def archive(role_id):
@@ -100,6 +95,3 @@ def restore(role_id):
     else:
         flash('Restore failed - role not found or not archived', 'error')
     return redirect_back()
-
-def redirect_back():
-    return redirect(request.referrer or url_for('roles.index'))

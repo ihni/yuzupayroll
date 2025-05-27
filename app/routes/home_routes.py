@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template # type: ignore
 
 home_bp = Blueprint('index', __name__)
 

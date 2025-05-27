@@ -1,4 +1,4 @@
-from flask import (
+from flask import ( # type: ignore
     render_template,
     Blueprint,
     request,
@@ -36,13 +36,11 @@ def edit():
                 'budget_end_month': int(request.form['budget_end_month']),
                 'budget_end_day': int(request.form['budget_end_day'])
             }
-            
             updated_org = OrganizationService.update(**update_data)
             if updated_org:
                 flash('Organization configuration updated!', 'success')
                 return redirect(url_for('organization.view'))
-            else:
-                flash('Update failed', 'error')
+            flash('Update failed', 'error')
         except (ValueError, KeyError) as e:
             flash('Invalid form data', 'error')
         except Exception as e:
@@ -53,9 +51,7 @@ def edit():
 @organization_bp.route("/reset-budget", methods=["POST"])
 def reset_budget():
     try:
-        updated_org = OrganizationService.update(
-            total_salary_budget=Decimal('0.00')
-        )
+        updated_org = OrganizationService.update(total_salary_budget=Decimal('0.00'))
         if updated_org:
             flash('Salary budget reset to zero!', 'success')
         else:
