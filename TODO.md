@@ -17,17 +17,13 @@
 ## Backend
 
 ### Core Logic
-- [ ] Complete the full functionality of service layers
-    - [X] Employee
-    - [X] Organization
-    - [ ] Payroll
-    - [ ] Payroll Worklog
-    - [X] Role
-    - [X] Worklog
+- [X] Complete the full functionality of service layers
 - [ ] Match up the routers with the service layer
 
 ### Features
-- [ ] To be added
+- [ ] Add user auth
+- [ ] Add per organization handling
+- [ ] Add departments
 
 ---
 

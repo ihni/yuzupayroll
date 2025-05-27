@@ -50,11 +50,18 @@ def index():
 
 @worklogs_bp.route("/<int:worklog_id>/lock", methods=["POST"])
 def lock(worklog_id):
-    if WorklogService.lock(worklog_id):
-        flash('Worklog locked', 'success')
-    else:
-        flash('Lock failed', 'error')
-    return redirect_back()
+    success = WorklogService.lock(worklog_id)
+    flash("Worklog locked" if success else "Lock failed", 
+          "success" if success else "error")
+    return redirect(request.referrer or url_for('worklogs.index'))
+
+# worklogs_bp — no payroll context
+@worklogs_bp.route("/<int:worklog_id>/unlock", methods=["POST"])
+def unlock(worklog_id):
+    success = WorklogService.unlock(worklog_id)
+    flash("Worklog unlocked" if success else "Unlock failed", 
+          "success" if success else "error")
+    return redirect(request.referrer or url_for('worklogs.index'))
 
 @worklogs_bp.route("/bulk-lock", methods=["POST"])
 def bulk_lock():

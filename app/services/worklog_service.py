@@ -29,13 +29,17 @@ class WorklogService:
 
     @staticmethod
     def get_eligible_for_payroll(employee_id: int, start: datetime, end: datetime) -> list[Worklog]:
-        """fetches worklogs that fit the criteria and are active"""
+        """fetches worklogs that fit the criteria and are active and not in a payroll"""
+        from app.models import Payroll, PayrollStatusEnum
+
         worklogs = Worklog.query.filter(
             Worklog.employee_id == employee_id,
             Worklog.date.between(start, end),
-            Worklog.status == WorklogStatusEnum.ACTIVE
+            Worklog.status != WorklogStatusEnum.ARCHIVED,
+            ~Worklog.payroll_worklogs.any(Payroll.status == PayrollStatusEnum.DRAFT)
         ).all()
-        logger.info(f"Fetching {len(worklogs)} work logs for employee ID {employee_id} between {start} - {end}")
+
+        logger.info(f"Fetched {len(worklogs)} eligible worklogs for employee ID {employee_id} between {start} - {end}")
         return worklogs
     
     @staticmethod

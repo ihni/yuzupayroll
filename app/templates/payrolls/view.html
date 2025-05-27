@@ -15,10 +15,7 @@
 </div>
 
 <div class="actions">
-    {% if payroll.status.name == 'DRAFT' %}
-        <form method="POST" action="{{ url_for('payrolls.calculate', payroll_id=payroll.id) }}" style="display: inline;">
-            <button type="submit">Calculate Totals</button>
-        </form>
+    {% if payroll.status == PayrollStatusEnum.DRAFT %}
         
         <a href="{{ url_for('worklogs.eligible_for_payroll', 
                           employee_id=payroll.employee_id,
@@ -34,29 +31,50 @@
     {% endif %}
 </div>
 
-<h3>Associated Worklogs</h3>
-<table>
+<h2 class="text-xl font-semibold mt-4 mb-2">Attached Worklogs</h2>
+{% if payroll.payroll_worklogs %}
+<table class="w-full text-left border">
     <thead>
         <tr>
-            <th>Date</th>
-            <th>Hours</th>
-            <th>Status</th>
+            <th class="px-2 py-1 border">Date</th>
+            <th class="px-2 py-1 border">Hours</th>
+            {% if payroll.status == PayrollStatusEnum.DRAFT %}
+            <th class="px-2 py-1 border">Actions</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody>
-        {% for worklog in payroll.payroll_worklogs %}
+        {% for payroll_worklog in payroll.payroll_worklogs %}
         <tr>
-            <td>{{ worklog.worklog.date.strftime('%Y-%m-%d') }}</td>
-            <td>{{ worklog.hours_recorded }}</td>
-            <td>{{ worklog.worklog.status.value }}</td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="3">No worklogs added yet</td>
+            <td class="px-2 py-1 border">{{ payroll_worklog.worklog.date }}</td>
+            <td class="px-2 py-1 border">{{ payroll_worklog.hours_recorded }}</td>
+            {% if payroll.status == PayrollStatusEnum.DRAFT %}
+            <td>
+                <!-- Remove Worklog -->
+                <form method="POST" action="{{ url_for('payrolls.remove_worklog', payroll_id=payroll.id, worklog_id=payroll_worklog.worklog.id) }}">
+                    <button type="submit" class="text-red-600 hover:underline">Remove</button>
+                </form>
+
+
+                <!-- Lock / Unlock Worklog -->
+                {% if payroll_worklog.worklog.status == WorklogStatusEnum.ACTIVE %}
+                <form action="{{ url_for('payrolls.lock_worklog', payroll_id=payroll.id, worklog_id=payroll_worklog.worklog.id) }}" method="post" style="display:inline;">
+                    <button type="submit" class="text-blue-600 hover:underline">Lock</button>
+                </form>
+                {% elif payroll_worklog.worklog.status == WorklogStatusEnum.LOCKED %}
+                <form action="{{ url_for('payrolls.unlock_worklog', payroll_id=payroll.id, worklog_id=payroll_worklog.worklog.id) }}" method="post" style="display:inline;">
+                    <button type="submit" class="text-yellow-600 hover:underline">Unlock</button>
+                </form>
+                {% endif %}
+            </td>
+            {% endif %}
         </tr>
         {% endfor %}
     </tbody>
 </table>
+{% else %}
+<p>No worklogs attached to this payroll.</p>
+{% endif %}
 
 <a href="{{ url_for('payrolls.index') }}">Back to List</a>
 {% endblock %}

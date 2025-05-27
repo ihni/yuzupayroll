@@ -1,40 +1,39 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Eligible Worklogs{% endblock %}
+{% block title %}Add Worklogs to Payroll #{{ payroll_id }}{% endblock %}
 
 {% block content %}
-<h2>Worklogs Eligible for Payroll</h2>
-<p>For period: {{ start_date }} to {{ end_date }}</p>
+<h2>Add Worklogs to Payroll #{{ payroll_id }}</h2>
 
 <form method="POST" action="{{ url_for('payrolls.add_worklogs', payroll_id=payroll_id) }}">
-    <table>
+    <table class="w-full text-left border">
         <thead>
             <tr>
-                <th>Select</th>
-                <th>Date</th>
-                <th>Hours</th>
-                <th>Status</th>
+                <th class="px-2 py-1 border">Select</th>
+                <th class="px-2 py-1 border">Date</th>
+                <th class="px-2 py-1 border">Hours Worked</th>
+                <th class="px-2 py-1 border">Status</th>
             </tr>
         </thead>
         <tbody>
-            {% for worklog in worklogs %}
-            <tr>
-                <td><input type="checkbox" name="worklog_ids" value="{{ worklog.id }}"></td>
-                <td>{{ worklog.date.strftime('%Y-%m-%d') }}</td>
-                <td>{{ worklog.hours_worked }}</td>
-                <td>{{ worklog.status.value }}</td>
-            </tr>
+            {% if worklogs %}
+                {% for worklog in worklogs %}
+                <tr>
+                    <td class="px-2 py-1 border text-center">
+                        <input type="checkbox" name="worklog_ids" value="{{ worklog.id }}">
+                    </td>
+                    <td class="px-2 py-1 border">{{ worklog.date }}</td>
+                    <td class="px-2 py-1 border">{{ worklog.hours_worked }}</td>
+                    <td class="px-2 py-1 border">{{ worklog.status }}</td>
+                </tr>
+                {% endfor %}
             {% else %}
-            <tr>
-                <td colspan="4">No eligible worklogs found</td>
-            </tr>
-            {% endfor %}
+                <tr><td colspan="4" class="px-2 py-1 border">No eligible worklogs found.</td></tr>
+            {% endif %}
         </tbody>
     </table>
 
-    {% if worklogs %}
-    <button type="submit">Add Selected to Payroll</button>
-    {% endif %}
+    <button type="submit" class="mt-2">Add Selected Worklogs</button>
 </form>
 
 <a href="{{ url_for('payrolls.view', payroll_id=payroll_id) }}">Back to Payroll</a>

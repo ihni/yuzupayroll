@@ -1,5 +1,5 @@
 from app.extensions import db
-from app.models import Payroll, PayrollStatusEnum
+from app.models import Payroll, PayrollStatusEnum, WorklogStatusEnum
 from datetime import datetime, timezone
 from sqlalchemy.exc import SQLAlchemyError # type: ignore
 from app.utils import get_logger
@@ -43,11 +43,12 @@ class PayrollService:
         total_hours = sum(pw.hours_recorded for pw in payroll.payroll_worklogs)
 
         try:
+            from app.services import OrganizationService
+            organization = OrganizationService.get()
             payroll.gross_pay = total_hours * payroll.employee.role.rate
-            payroll.net_pay = payroll.gross_pay * (1 - payroll.organization.tax_rate)
+            payroll.net_pay = payroll.gross_pay * (1 - organization.tax_rate)
             db.session.commit()
             logger.info(f"Calculated totals for payroll ID {payroll_id}: hours={total_hours}, gross={payroll.gross_pay}, net={payroll.net_pay}")
-            return payroll
             return payroll
         except SQLAlchemyError as e:
             db.session.rollback()
@@ -61,7 +62,7 @@ class PayrollService:
         if not payroll:
             return False
 
-        if any(pw.worklog.status != 'LOCKED' for pw in payroll.payroll_worklogs):
+        if any(pw.worklog.status != WorklogStatusEnum.LOCKED for pw in payroll.payroll_worklogs):
             logger.warning(f"Cannot finalize payroll ID {payroll_id} because some worklogs are not locked")
             return False
 
@@ -78,6 +79,7 @@ class PayrollService:
                 db.session.rollback()
                 return False
 
+            PayrollService.calculate_totals(payroll_id)
             db.session.commit()
             logger.info(f"Finalized payroll ID {payroll_id}")
             return True
@@ -194,3 +196,81 @@ class PayrollService:
             db.session.rollback()
             logger.exception(f"Failed to archive payroll ID {payroll_id}: {str(e)}")
             return False
+        
+    @staticmethod
+    def add_worklogs_in_payroll(payroll_id, worklog_ids):
+        from app.models import PayrollWorklog, Payroll
+        payroll = Payroll.query.get(payroll_id)
+        if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
+            raise ValueError("Payroll must be in DRAFT status to add worklogs.")
+        
+        added_any = False
+        for worklog_id in worklog_ids:
+            # Check if worklog already associated
+            existing = PayrollWorklog.query.filter_by(payroll_id=payroll_id, worklog_id=worklog_id).first()
+            if existing:
+                continue
+            
+            # Optionally, check worklog eligibility here (status, employee, etc.)
+            from app.services import WorklogService
+            worklog = WorklogService.get_by_id(worklog_id)
+            pw = PayrollWorklog(payroll_id=payroll_id, worklog_id=worklog_id, hours_recorded=worklog.hours_worked)
+            # Add to session
+            db.session.add(pw)
+            added_any = True
+        
+        if added_any:
+            db.session.commit()
+            # Optionally recalc totals
+            PayrollService.calculate_totals(payroll_id)
+        return added_any
+
+    @staticmethod
+    def remove_worklogs_in_payroll(payroll_id, worklog_ids):
+        from app.models import PayrollWorklog
+        payroll = Payroll.query.get(payroll_id)
+        if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
+            logger.warning("Payroll either cannot be found or is not in draft")
+            raise ValueError("Payroll must be in DRAFT status to remove worklogs.")
+        
+        for worklog_id in worklog_ids:
+            # logger.warning(f"{worklog_ids}")
+            pw = PayrollWorklog.query.filter_by(payroll_id=payroll_id, worklog_id=worklog_id).first()
+            if not pw:
+                continue
+            db.session.delete(pw)
+            removed_any = True
+        
+        if removed_any:
+            db.session.commit()
+            # Optionally recalc totals
+            PayrollService.calculate_totals(payroll_id)
+        return removed_any
+    
+    @staticmethod
+    def lock_worklog_in_payroll(payroll_id, worklog_id):
+        payroll = Payroll.query.get(payroll_id)
+        if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
+            raise ValueError("Payroll must be in DRAFT status to lock worklogs.")
+
+        from app.services import WorklogService
+        from app.models import PayrollWorklog
+        pw = PayrollWorklog.query.filter_by(payroll_id=payroll_id, worklog_id=worklog_id).first()
+        if not pw:
+            raise ValueError("Worklog not associated with this payroll.")
+
+        return WorklogService.lock(worklog_id)
+
+    @staticmethod
+    def unlock_worklog_in_payroll(payroll_id, worklog_id):
+        payroll = Payroll.query.get(payroll_id)
+        if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
+            raise ValueError("Payroll must be in DRAFT status to unlock worklogs.")
+
+        from app.services import WorklogService
+        from app.models import PayrollWorklog
+        pw = PayrollWorklog.query.filter_by(payroll_id=payroll_id, worklog_id=worklog_id).first()
+        if not pw:
+            raise ValueError("Worklog not associated with this payroll.")
+
+        return WorklogService.unlock(worklog_id)

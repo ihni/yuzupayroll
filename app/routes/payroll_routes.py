@@ -6,11 +6,14 @@ from flask import (
     url_for,
     flash
 )
-from app.services import PayrollService, PayrollWorklogService
-from app.models import PayrollStatusEnum
+from app.services import PayrollService, PayrollWorklogService, WorklogService
+from app.models import PayrollStatusEnum, WorklogStatusEnum
 from datetime import datetime
 
 payrolls_bp = Blueprint("payrolls", __name__, url_prefix="/payrolls")
+
+def redirect_back_to_view(payroll_id):
+    return redirect(url_for('payrolls.view', payroll_id=payroll_id))
 
 @payrolls_bp.route("/", methods=["GET"])
 def index():
@@ -59,7 +62,9 @@ def view(payroll_id):
         return redirect(url_for('payrolls.index'))
     
     return render_template("payrolls/view.html",
-                         payroll=payroll)
+                         payroll=payroll,
+                         PayrollStatusEnum=PayrollStatusEnum,
+                         WorklogStatusEnum=WorklogStatusEnum,)
 
 @payrolls_bp.route("/<int:payroll_id>/calculate", methods=["POST"])
 def calculate(payroll_id):
@@ -67,13 +72,13 @@ def calculate(payroll_id):
     if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
         flash('Cannot calculate this payroll', 'error')
         return redirect_back_to_view(payroll_id)
-    
+
     try:
         PayrollService.calculate_totals(payroll_id)
         flash('Payroll calculated successfully!', 'success')
     except Exception as e:
-        flash(f'Calculation failed: {str(e)}', 'error')
-    
+        flash(f'Calculation failed: {e}', 'error')
+
     return redirect_back_to_view(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/finalize", methods=["POST"])
@@ -82,29 +87,58 @@ def finalize(payroll_id):
     if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
         flash('Cannot finalize this payroll', 'error')
         return redirect_back_to_view(payroll_id)
-    
+
     try:
         if PayrollService.finalize(payroll_id):
             flash('Payroll finalized!', 'success')
         else:
             flash('Finalization failed', 'error')
     except Exception as e:
-        flash(f'Error: {str(e)}', 'error')
-    
+        flash(f'Error: {e}', 'error')
+
     return redirect_back_to_view(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/add-worklogs", methods=["POST"])
 def add_worklogs(payroll_id):
     try:
         worklog_ids = [int(id) for id in request.form.getlist('worklog_ids')]
-        if PayrollWorklogService.bulk_create_associations(payroll_id, worklog_ids):
-            flash('Worklogs added successfully!', 'success')
-        else:
-            flash('Some worklogs could not be added', 'warning')
+        PayrollService.add_worklogs_in_payroll(payroll_id, worklog_ids)
+        flash("Worklogs added and totals updated", "success")
     except Exception as e:
-        flash(f'Error adding worklogs: {str(e)}', 'error')
-    
+        flash(str(e), "error")
     return redirect_back_to_view(payroll_id)
 
-def redirect_back_to_view(payroll_id):
-    return redirect(url_for('payrolls.view', payroll_id=payroll_id))
+@payrolls_bp.route("/<int:payroll_id>/remove-worklog/<int:worklog_id>", methods=["POST"])
+def remove_worklog(payroll_id, worklog_id):
+    try:
+        PayrollService.remove_worklogs_in_payroll(payroll_id, [worklog_id])
+        flash("Worklog removed and totals updated", "success")
+    except Exception as e:
+        flash(str(e), "error")
+    return redirect_back_to_view(payroll_id)
+
+@payrolls_bp.route('/<int:payroll_id>/worklogs/<int:worklog_id>/lock', methods=['POST'])
+def lock_worklog(payroll_id, worklog_id):
+    try:
+        success = PayrollService.lock_worklog_in_payroll(payroll_id, worklog_id)
+        if success:
+            flash("Worklog locked.", "success")
+        else:
+            flash("Could not lock worklog.", "warning")
+    except Exception as e:
+        flash(f"Error locking worklog: {str(e)}", "error")
+
+    return redirect_back_to_view(payroll_id)
+
+@payrolls_bp.route('/<int:payroll_id>/worklogs/<int:worklog_id>/unlock', methods=['POST'])
+def unlock_worklog(payroll_id, worklog_id):
+    try:
+        success = PayrollService.unlock_worklog_in_payroll(payroll_id, worklog_id)
+        if success:
+            flash("Worklog unlocked.", "success")
+        else:
+            flash("Could not unlock worklog.", "warning")
+    except Exception as e:
+        flash(f"Error unlocking worklog: {str(e)}", "error")
+
+    return redirect_back_to_view(payroll_id)
