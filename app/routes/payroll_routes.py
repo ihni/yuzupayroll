@@ -20,9 +20,9 @@ payrolls_bp = Blueprint(
     url_prefix="/payrolls",
 )
 
-def _redirect_to_payroll_view(payroll_id: int) -> Response:
-    """helper to redirect to payroll view page"""
-    return redirect(url_for('payrolls.view', payroll_id=payroll_id))
+def _redirect_to_payroll_details(payroll_id: int) -> Response:
+    """helper to redirect to payroll details page"""
+    return redirect(url_for('payrolls.details', payroll_id=payroll_id))
 
 def _validate_draft_payroll(payroll_id: int) -> Optional[dict]:
     """validate payroll exists and is in DRAFT status"""
@@ -79,7 +79,7 @@ def create() -> Response | str:
             end_date=end_date
         )
         flash('Payroll created successfully!', 'success')
-        return _redirect_to_payroll_view(payroll.id)
+        return _redirect_to_payroll_details(payroll.id)
     
     except (KeyError, BadRequest) as e:
         flash(str(e) or 'Missing required fields', 'error')
@@ -89,7 +89,7 @@ def create() -> Response | str:
         return render_template("payrolls/create.html", form_data=request.form)
 
 @payrolls_bp.route("/<int:payroll_id>", methods=["GET"])
-def view(payroll_id: int) -> str:
+def details(payroll_id: int) -> str:
     """view payroll details"""
     payroll = PayrollService.get_by_id(payroll_id)
     if not payroll:
@@ -97,7 +97,7 @@ def view(payroll_id: int) -> str:
         abort(404)
         
     return render_template(
-        "payrolls/view.html",
+        "payrolls/details.html",
         payroll=payroll,
         PayrollStatusEnum=PayrollStatusEnum,
         WorklogStatusEnum=WorklogStatusEnum
@@ -107,7 +107,7 @@ def view(payroll_id: int) -> str:
 def calculate(payroll_id: int) -> Response:
     """calculate payroll totals"""
     if not _validate_draft_payroll(payroll_id):
-        return _redirect_to_payroll_view(payroll_id)
+        return _redirect_to_payroll_details(payroll_id)
 
     try:
         PayrollService.calculate_totals(payroll_id)
@@ -115,13 +115,13 @@ def calculate(payroll_id: int) -> Response:
     except Exception as e:
         flash(f'Calculation failed: {str(e)}', 'error')
 
-    return _redirect_to_payroll_view(payroll_id)
+    return _redirect_to_payroll_details(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/finalize", methods=["POST"])
 def finalize(payroll_id: int) -> Response:
     """finalize a payroll"""
     if not _validate_draft_payroll(payroll_id):
-        return _redirect_to_payroll_view(payroll_id)
+        return _redirect_to_payroll_details(payroll_id)
 
     try:
         if PayrollService.finalize(payroll_id):
@@ -131,19 +131,19 @@ def finalize(payroll_id: int) -> Response:
     except Exception as e:
         flash(f'System error during finalization: {str(e)}', 'error')
 
-    return _redirect_to_payroll_view(payroll_id)
+    return _redirect_to_payroll_details(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/add-worklogs", methods=["POST"])
 def add_worklogs(payroll_id: int) -> Response:
     """add worklogs to payroll"""
     if not _validate_draft_payroll(payroll_id):
-        return _redirect_to_payroll_view(payroll_id)
+        return _redirect_to_payroll_details(payroll_id)
 
     try:
         worklog_ids = [int(id) for id in request.form.getlist('worklog_ids')]
         if not worklog_ids:
             flash('No worklogs selected', 'error')
-            return _redirect_to_payroll_view(payroll_id)
+            return _redirect_to_payroll_details(payroll_id)
 
         added_count = PayrollService.add_worklogs_to_payroll(payroll_id, worklog_ids)
         flash(f'Added {added_count} worklogs to payroll', 'success')
@@ -152,13 +152,13 @@ def add_worklogs(payroll_id: int) -> Response:
     except Exception as e:
         flash(f'Failed to add worklogs: {str(e)}', 'error')
 
-    return _redirect_to_payroll_view(payroll_id)
+    return _redirect_to_payroll_details(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/remove-worklog/<int:worklog_id>", methods=["POST"])
 def remove_worklog(payroll_id: int, worklog_id: int) -> Response:
     """Remove worklog from payroll."""
     if not _validate_draft_payroll(payroll_id):
-        return _redirect_to_payroll_view(payroll_id)
+        return _redirect_to_payroll_details(payroll_id)
 
     try:
         if PayrollService.remove_worklogs_from_payroll(payroll_id, [worklog_id]):
@@ -168,7 +168,7 @@ def remove_worklog(payroll_id: int, worklog_id: int) -> Response:
     except Exception as e:
         flash(f'System error: {str(e)}', 'error')
 
-    return _redirect_to_payroll_view(payroll_id)
+    return _redirect_to_payroll_details(payroll_id)
 
 @payrolls_bp.route("/<int:payroll_id>/edit", methods=["GET", "POST"])
 def edit(payroll_id: int) -> Response | str:
@@ -180,7 +180,7 @@ def edit(payroll_id: int) -> Response | str:
     
     if payroll.status != PayrollStatusEnum.DRAFT:
         flash('Only DRAFT payrolls can be edited', 'error')
-        return _redirect_to_payroll_view(payroll_id)
+        return _redirect_to_payroll_details(payroll_id)
 
     if request.method == "GET":
         return render_template("payrolls/edit.html", payroll=payroll)
@@ -202,4 +202,4 @@ def edit(payroll_id: int) -> Response | str:
     except Exception as e:
         flash(f'System error: {str(e)}', 'error')
 
-    return _redirect_to_payroll_view(payroll_id)
+    return _redirect_to_payroll_details(payroll_id)
