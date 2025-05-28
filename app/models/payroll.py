@@ -1,5 +1,6 @@
 from app.extensions import db
 from sqlalchemy import func # type: ignore
+from sqlalchemy.ext.hybrid import hybrid_property # type: ignore
 from enum import Enum as PyEnum
 
 class PayrollStatusEnum(PyEnum):
@@ -38,3 +39,10 @@ class Payroll(db.Model):
 
     employee = db.relationship('Employee', back_populates='payrolls')
     payroll_worklogs = db.relationship('PayrollWorklog', back_populates='payroll')
+
+    @hybrid_property
+    def total_hours(self):
+        """Calculate total hours from related worklogs"""
+        if not self.payroll_worklogs:  # Handle case where relationship isn't loaded
+            return 0
+        return sum(pw.hours_recorded for pw in self.payroll_worklogs)
