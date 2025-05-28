@@ -11,7 +11,7 @@ from flask import (
     Response
 )
 from werkzeug.exceptions import BadRequest # type: ignore
-from app.services import PayrollService
+from app.services import PayrollService, PayrollWorklogService, WorklogService
 from app.models import PayrollStatusEnum, WorklogStatusEnum
 
 payrolls_bp = Blueprint(
@@ -95,10 +95,11 @@ def details(payroll_id: int) -> str:
     if not payroll:
         flash('Payroll not found', 'error')
         abort(404)
-        
+    total_hours = sum(pw.hours_recorded for pw in payroll.payroll_worklogs)
     return render_template(
         "payrolls/details.html",
         payroll=payroll,
+        total_hours=total_hours,
         PayrollStatusEnum=PayrollStatusEnum,
         WorklogStatusEnum=WorklogStatusEnum
     )
@@ -202,4 +203,46 @@ def edit(payroll_id: int) -> Response | str:
     except Exception as e:
         flash(f'System error: {str(e)}', 'error')
 
+    return _redirect_to_payroll_details(payroll_id)
+
+@payrolls_bp.route("/<int:payroll_id>/lock-worklog/<int:worklog_id>", methods=["POST"])
+def lock_worklog(payroll_id: int, worklog_id: int) -> Response:
+    """Lock a worklog from payroll details"""
+    if not _validate_draft_payroll(payroll_id):
+        return _redirect_to_payroll_details(payroll_id)
+
+    try:
+        payroll = PayrollService.get_by_id(payroll_id)
+        if not any(pw.worklog_id == worklog_id for pw in payroll.payroll_worklogs):
+            flash("Worklog not found in this payroll", "error")
+            return _redirect_to_payroll_details(payroll_id)
+
+        if WorklogService.lock(worklog_id):
+            flash("Worklog locked successfully", "success")
+        else:
+            flash("Failed to lock worklog", "error")
+    except Exception as e:
+        flash(f"Failed to lock worklog: {str(e)}", "error")
+    
+    return _redirect_to_payroll_details(payroll_id)
+
+@payrolls_bp.route("/<int:payroll_id>/unlock-worklog/<int:worklog_id>", methods=["POST"])
+def unlock_worklog(payroll_id: int, worklog_id: int) -> Response:
+    """Unlock a worklog from payroll details"""
+    if not _validate_draft_payroll(payroll_id):
+        return _redirect_to_payroll_details(payroll_id)
+
+    try:
+        payroll = PayrollService.get_by_id(payroll_id)
+        if not any(pw.worklog_id == worklog_id for pw in payroll.payroll_worklogs):
+            flash("Worklog not found in this payroll", "error")
+            return _redirect_to_payroll_details(payroll_id)
+
+        if WorklogService.unlock(worklog_id):
+            flash("Worklog unlocked successfully", "success")
+        else:
+            flash("Failed to unlock worklog (may be in a finalized payroll)", "error")
+    except Exception as e:
+        flash(f"Failed to unlock worklog: {str(e)}", "error")
+    
     return _redirect_to_payroll_details(payroll_id)
