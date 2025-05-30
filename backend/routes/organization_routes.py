@@ -11,7 +11,7 @@ from flask import ( # type: ignore
     Response
 )
 from werkzeug.exceptions import BadRequest # type: ignore
-from app.services import OrganizationService
+from backend.services import OrganizationService
 
 organization_bp = Blueprint(
     "organization",

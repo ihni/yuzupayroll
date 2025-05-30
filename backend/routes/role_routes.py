@@ -10,8 +10,8 @@ from flask import (
     Response
 )
 from werkzeug.exceptions import BadRequest # type: ignore
-from app.services import RoleService
-from app.models import RoleStatusEnum
+from backend.services import RoleService
+from backend.models import RoleStatusEnum
 
 roles_bp = Blueprint(
     "roles", 

@@ -10,8 +10,8 @@ from flask import ( # type: ignore
 )
 from werkzeug.exceptions import BadRequest # type: ignore
 from typing import Optional, Dict, Any
-from app.services import EmployeeService
-from app.models import EmployeeStatusEnum
+from backend.services import EmployeeService
+from backend.models import EmployeeStatusEnum
 
 employees_bp = Blueprint(
     "employees", 

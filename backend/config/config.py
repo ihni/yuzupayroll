@@ -15,3 +15,5 @@ class Config:
         f"{DB.CONFIG['database']}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    JINJA_SILENT_UNDEFINED = True # False to use StrictUndefined

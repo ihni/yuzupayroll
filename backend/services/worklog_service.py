@@ -1,8 +1,8 @@
-from app.extensions import db
+from backend.extensions import db
 from datetime import datetime, timezone
-from app.models import Worklog, WorklogStatusEnum
+from backend.models import Worklog, WorklogStatusEnum
 from sqlalchemy.exc import SQLAlchemyError # type: ignore
-from app.utils import get_logger
+from backend.utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -30,7 +30,7 @@ class WorklogService:
     @staticmethod
     def get_eligible_for_payroll(employee_id: int, start: datetime, end: datetime) -> list[Worklog]:
         """fetches worklogs that fit the criteria and are active and not in a payroll"""
-        from app.models import Payroll, PayrollStatusEnum
+        from backend.models import Payroll, PayrollStatusEnum
 
         worklogs = Worklog.query.filter(
             Worklog.employee_id == employee_id,
@@ -92,7 +92,7 @@ class WorklogService:
             logger.warning(f"Unlock failed: Worklog ID {worklog_id} not found")
             return False
         
-        from app.services import PayrollWorklogService
+        from backend.services import PayrollWorklogService
         if PayrollWorklogService.is_worklog_in_finalized_payroll(worklog_id):
             logger.warning(f"Unlock failed: Worklog ID {worklog_id} is part of a locked payroll")
             return False
@@ -202,7 +202,7 @@ class WorklogService:
             logger.warning(f"Worklog ID {worklog_id} not found")
             return False
         
-        from app.services.payroll_worklog_service import PayrollWorklogService
+        from backend.services.payroll_worklog_service import PayrollWorklogService
         if PayrollWorklogService.is_worklog_in_any_payroll(worklog_id):
             logger.warning(f"Cannot archive worklog ID {worklog_id} because it is in a payroll")
             return False

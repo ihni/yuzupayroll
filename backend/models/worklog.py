@@ -1,4 +1,4 @@
-from app.extensions import db
+from backend.extensions import db
 from sqlalchemy import func # type: ignore
 from enum import Enum as PyEnum
 

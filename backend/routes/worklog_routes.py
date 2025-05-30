@@ -11,8 +11,8 @@ from flask import (
     Response
 )
 from werkzeug.exceptions import BadRequest # type: ignore
-from app.services import WorklogService
-from app.models import WorklogStatusEnum
+from backend.services import WorklogService
+from backend.models import WorklogStatusEnum
 
 worklogs_bp = Blueprint(
     "worklogs",

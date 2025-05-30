@@ -1,8 +1,8 @@
-from app.extensions import db
-from app.models import Employee, EmployeeStatusEnum
+from backend.extensions import db
+from backend.models import Employee, EmployeeStatusEnum
 from datetime import datetime, timezone
 from sqlalchemy.exc import SQLAlchemyError # type: ignore
-from app.utils import get_logger
+from backend.utils import get_logger
 
 logger = get_logger(__name__)
 

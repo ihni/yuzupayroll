@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template # type: ignore
 from collections import defaultdict
-from app.extensions import db
-from app.services import PayrollService, OrganizationService
-from app.models import Role, PayrollWorklog, Worklog, Employee, RoleStatusEnum
+from backend.extensions import db
+from backend.services import PayrollService, OrganizationService
+from backend.models import Role, PayrollWorklog, Worklog, Employee, RoleStatusEnum
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 

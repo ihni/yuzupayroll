@@ -1,7 +1,7 @@
-from app.extensions import db
-from app.models import Organization
+from backend.extensions import db
+from backend.models import Organization
 from sqlalchemy.exc import SQLAlchemyError # type: ignore
-from app.utils import get_logger
+from backend.utils import get_logger
 
 logger = get_logger(__name__)
 

@@ -1,8 +1,8 @@
-from app.extensions import db
-from app.models import Payroll, PayrollStatusEnum, WorklogStatusEnum
+from backend.extensions import db
+from backend.models import Payroll, PayrollStatusEnum, WorklogStatusEnum
 from datetime import datetime, timezone
 from sqlalchemy.exc import SQLAlchemyError # type: ignore
-from app.utils import get_logger
+from backend.utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -43,7 +43,7 @@ class PayrollService:
         total_hours = sum(pw.hours_recorded for pw in payroll.payroll_worklogs)
 
         try:
-            from app.services import OrganizationService
+            from backend.services import OrganizationService
             organization = OrganizationService.get()
             payroll.gross_pay = total_hours * payroll.employee.role.rate
             payroll.net_pay = payroll.gross_pay * (1 - organization.tax_rate)
@@ -71,7 +71,7 @@ class PayrollService:
             payroll.finalized_at = datetime.now(timezone.utc)
 
             
-            from app.services import PayrollWorklogService 
+            from backend.services import PayrollWorklogService 
             success = PayrollWorklogService.lock_snapshot(payroll_id)
 
             if not success:
@@ -146,7 +146,7 @@ class PayrollService:
             
             if dates_changed:
 
-                from app.services.payroll_worklog_service import PayrollWorklogService
+                from backend.services.payroll_worklog_service import PayrollWorklogService
                 payroll_worklogs = PayrollWorklogService.get_worklogs_for_payroll(payroll_id)
 
                 filtered_data = [
@@ -154,7 +154,7 @@ class PayrollService:
                     if payroll.start_date <= payroll_worklog.worklog.date <= payroll.end_date
                 ]
 
-                from app.services import OrganizationService
+                from backend.services import OrganizationService
                 organization = OrganizationService.get()
                 
                 total_hours = sum(payroll_worklog.worklog.hours_worked for payroll_worklog in filtered_data)
@@ -202,7 +202,7 @@ class PayrollService:
         
     @staticmethod
     def add_worklogs_in_payroll(payroll_id, worklog_ids):
-        from app.models import PayrollWorklog, Payroll
+        from backend.models import PayrollWorklog, Payroll
         payroll = Payroll.query.get(payroll_id)
         if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
             raise ValueError("Payroll must be in DRAFT status to add worklogs.")
@@ -215,7 +215,7 @@ class PayrollService:
                 continue
             
             # Optionally, check worklog eligibility here (status, employee, etc.)
-            from app.services import WorklogService
+            from backend.services import WorklogService
             worklog = WorklogService.get_by_id(worklog_id)
             pw = PayrollWorklog(payroll_id=payroll_id, worklog_id=worklog_id, hours_recorded=worklog.hours_worked)
             # Add to session
@@ -230,7 +230,7 @@ class PayrollService:
 
     @staticmethod
     def remove_worklogs_in_payroll(payroll_id, worklog_ids):
-        from app.models import PayrollWorklog
+        from backend.models import PayrollWorklog
         payroll = Payroll.query.get(payroll_id)
         if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
             logger.warning("Payroll either cannot be found or is not in draft")
@@ -256,8 +256,8 @@ class PayrollService:
         if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
             raise ValueError("Payroll must be in DRAFT status to lock worklogs.")
 
-        from app.services import WorklogService
-        from app.models import PayrollWorklog
+        from backend.services import WorklogService
+        from backend.models import PayrollWorklog
         pw = PayrollWorklog.query.filter_by(payroll_id=payroll_id, worklog_id=worklog_id).first()
         if not pw:
             raise ValueError("Worklog not associated with this payroll.")
@@ -270,8 +270,8 @@ class PayrollService:
         if not payroll or payroll.status != PayrollStatusEnum.DRAFT:
             raise ValueError("Payroll must be in DRAFT status to unlock worklogs.")
 
-        from app.services import WorklogService
-        from app.models import PayrollWorklog
+        from backend.services import WorklogService
+        from backend.models import PayrollWorklog
         pw = PayrollWorklog.query.filter_by(payroll_id=payroll_id, worklog_id=worklog_id).first()
         if not pw:
             raise ValueError("Worklog not associated with this payroll.")
